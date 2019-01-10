@@ -43,17 +43,19 @@ class ReutersEntry:
         for topic in entry.topics.find_all('d'):
             self.topics.append(topic.get_text())
         if entry.body is not None:
-            self.clean_body = filter_body(entry.body.get_text())
+            # self.clean_body = filter_body(entry.body.get_text())
+            self.clean_body = filter_body(entry.text)
         else:
             self.clean_body = ''
         # 3-grams definitions
         # "Stride"- like three gram
-        self.contiguos_3_grams = None
+        self.stride_3_grams = None
         # Full 3 gram 
         self.full_3_grams = None
         # Run init functions
-        #We calculate contigous for all entries
-        self.calc_contiguos_3_grams()
+        #We calculate contigous for the first 100 entries
+        if self.id < 100:
+            self.calc_stride_3_grams()
 
     def __str__(self):
         topics = ','.join(self.topics)
@@ -65,12 +67,12 @@ class ReutersEntry:
     in the dictionary. Use "dictionary.get('alg')" instead of 
     dictionary['alg'] (".get" returns None if there is no such key)
     '''
-    def calc_contiguos_3_grams(self):
-        self.contigous_3_grams = dict()
+    def calc_stride_3_grams(self):
+        self.stride_3_grams = dict()
         for i in range(0, len(self.clean_body) - 3):
-            if self.clean_body[i:i+3] not in self.contigous_3_grams:
-                self.contigous_3_grams[self.clean_body[i:i+3]] = 0
-            self.contigous_3_grams[self.clean_body[i:i+3]] += 1
+            if self.clean_body[i:i+3] not in self.stride_3_grams:
+                self.stride_3_grams[self.clean_body[i:i+3]] = 0
+            self.stride_3_grams[self.clean_body[i:i+3]] += 1
 
 '''
 Reads a file an returns an BeautifulSoup object
