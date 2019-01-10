@@ -57,3 +57,49 @@ k=2
 lam=0.5
 #can see that it obtains lambda^4 as kernel value
 print(naive(s,t,k,lam),lam**4)
+
+def get_all_indices_contain(t,x):
+	indices = []
+	index = 0
+	for char in t:
+		if char == x:
+			indices.append(index)
+		index += 1
+	return indices
+
+
+def calc_k_prime(s,t,i,lam):
+	if i == 0:
+		return 1
+	elif min(len(s),len(t)) < i == 0:
+		return 0
+	
+	summation = 0	
+	indices = get_all_indices_contain(t,s[-1])
+	for index in indices:
+		if index < 1:
+			t_val = ""
+		else:
+			t_val = t[1:index-1]
+		summation += calc_k_prime(s,t_val,i-1,lam)*np.power(lam,len(t)-index+2)	
+	
+	return lam*calc_k_prime(s[:-1],t,i-1,lam)+summation
+		
+	
+def calc_k(s,t,i,lam):
+	if min(len(s),len(t)) < i:
+		return 0
+	
+	indices = get_all_indices_contain(t,s[-1])
+	summation = 0
+	for index in indices:
+		if index < 1:
+			t_val = ""
+		else:
+			t_val = t[1:index-1]
+		summation += calc_k_prime(s,t_val,i-1,lam)*np.power(lam,2)
+
+	return calc_k(s[:-1],t,i,lam) + summation
+
+	
+print(calc_k("car","cat",2,0.5))
