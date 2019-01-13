@@ -108,13 +108,22 @@ def ssk(s,t,k,lam):
 	kprime_table = np.zeros((k+1,len(s)+1,len(t)+1))
 	return calc_k(s,t,k,lam,k_table,kprime_table)
 	
-def create_gram_matrix(documents,k,lam):
+def ssk_normalized(s,t,k,lam):
+	kernel_st = ssk(s,t,k,lam)
+	kernel_ss = ssk(s,s,k,lam)
+	kernel_tt = ssk(t,t,k,lam)
+	return kernel_st/(np.sqrt(kernel_ss*kernel_tt))
+	
+def create_gram_matrix(documents,k,lam,isNormalized = True):
 	n = len(documents)
 	G = np.zeros((n,n))
 	for i in range(n):
 		for j in range(n):
 			if i <= j: #K(s,t) = K(t,s), only want triangular matrix
-				G[i][j] = ssk(documents[i],documents[j],k,lam)
+				if isNormalized:
+					G[i][j] = ssk_normalized(documents[i],documents[j],k,lam)
+				else:
+					G[i][j] = ssk(documents[i],documents[j],k,lam)
 	return G
 
 class Test(unittest.TestCase):
