@@ -108,7 +108,14 @@ def ssk(s,t,k,lam):
 	kprime_table = np.zeros((k+1,len(s)+1,len(t)+1))
 	return calc_k(s,t,k,lam,k_table,kprime_table)
 	
-	
+def create_gram_matrix(documents,k,lam):
+	n = len(documents)
+	G = np.zeros((n,n))
+	for i in range(n):
+		for j in range(n):
+			if i <= j: #K(s,t) = K(t,s), only want triangular matrix
+				G[i][j] = ssk(documents[i],documents[j],k,lam)
+	return G
 
 class Test(unittest.TestCase):
 
