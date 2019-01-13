@@ -66,32 +66,49 @@ def get_all_indices_contain(t,x):
 		index += 1
 	return indices
 
-def calc_k_prime(s,t,i,lam):
-	if i==0:
-		return 1
-	elif min(len(s),len(t)) < i:
-		return 0
-	
-	summation = 0
-	x=s[-1]
-	indices = get_all_indices_contain(t,x)
-	for j in indices:
-		summation += calc_k_prime(s[:-1],t[0:j-1],i-1,lam)*np.power(lam,len(t)-j+2)
-	
-	return lam*calc_k_prime(s[:-1],t,i,lam)+summation
-	
-def calc_k(s,t,i,lam):
-	if min(len(s),len(t)) < i:
-		return 0
-	
-	summation = 0
-	x=s[-1]
-	indices = get_all_indices_contain(t,x)
-	for j in indices:
-		summation += calc_k_prime(s[:-1],t[0:j-1],i-1,lam)*np.power(lam,2)
-	
-	return calc_k(s[:-1],t,i,lam)+summation
+def calc_k_prime(s,t,i,lam,kprime_table):
+	if kprime_table[i][len(s)][len(t)] > 0:
+		return kprime_table[i][len(s)][len(t)]
 
+	if i==0:
+		kprime_table[i][len(s)][len(t)] = 1
+		return kprime_table[i][len(s)][len(t)]
+	elif min(len(s),len(t)) < i:
+		kprime_table[i][len(s)][len(t)] = 0
+		return kprime_table[i][len(s)][len(t)]
+	
+	summation = 0
+	x=s[-1]
+	indices = get_all_indices_contain(t,x)
+	for j in indices:
+		summation += calc_k_prime(s[:-1],t[0:j-1],i-1,lam,kprime_table)*np.power(lam,len(t)-j+2)
+	
+	kprime_table[i][len(s)][len(t)] = lam*calc_k_prime(s[:-1],t,i,lam,kprime_table)+summation
+	return kprime_table[i][len(s)][len(t)]
+	
+def calc_k(s,t,i,lam,k_table,kprime_table):
+	if k_table[i][len(s)][len(t)] > 0:
+		return k_table[i][len(s)][len(t)]
+
+	if min(len(s),len(t)) < i:
+		k_table[i][len(s)][len(t)] = 0
+		return k_table[i][len(s)][len(t)]
+	
+	summation = 0
+	x=s[-1]
+	indices = get_all_indices_contain(t,x)
+	for j in indices:
+		summation += calc_k_prime(s[:-1],t[0:j-1],i-1,lam,kprime_table)*np.power(lam,2)
+	
+	k_table[i][len(s)][len(t)] = calc_k(s[:-1],t,i,lam,k_table,kprime_table)+summation
+	return k_table[i][len(s)][len(t)]
+
+def ssk(s,t,k,lam):
+	k_table = np.zeros((k+1,len(s)+1,len(t)+1))
+	kprime_table = np.zeros((k+1,len(s)+1,len(t)+1))
+	return calc_k(s,t,k,lam,k_table,kprime_table)
+	
+	
 
 class Test(unittest.TestCase):
 
@@ -100,7 +117,7 @@ class Test(unittest.TestCase):
 		t="cat"
 		k=2
 		lam=0.5
-		self.assertEqual(calc_k(s,t,k,lam),lam**4)
+		self.assertEqual(ssk(s,t,k,lam),lam**4)
 
 
 if __name__ == '__main__':
