@@ -5,6 +5,7 @@ Date: 10th Jan 2019
 
 import itertools
 import numpy as np
+import unittest
 
 def find_indices_with_substring(s,k,substring):
 	start = 0
@@ -51,9 +52,89 @@ def naive(s,t,k,lam):
 	
 	return kernel_sum
 
-s="car"
-t="cat"
-k=2
-lam=0.5
-#can see that it obtains lambda^4 as kernel value
-print(naive(s,t,k,lam),lam**4)
+'''
+Given string t and char x, finds all indices
+where x appears in t. Note that indexing is 
+counted starting at 1
+'''
+def get_all_indices_contain(t,x):
+	indices = []
+	index = 1
+	for char in t:
+		if char == x:
+			indices.append(index)
+		index += 1
+	return indices
+
+def calc_k_prime(s,t,i,lam,kprime_table):
+	if kprime_table[i][len(s)][len(t)] > 0:
+		return kprime_table[i][len(s)][len(t)]
+
+	if i==0:
+		kprime_table[i][len(s)][len(t)] = 1
+		return kprime_table[i][len(s)][len(t)]
+	elif min(len(s),len(t)) < i:
+		kprime_table[i][len(s)][len(t)] = 0
+		return kprime_table[i][len(s)][len(t)]
+	
+	summation = 0
+	x=s[-1]
+	indices = get_all_indices_contain(t,x)
+	for j in indices:
+		summation += calc_k_prime(s[:-1],t[0:j-1],i-1,lam,kprime_table)*np.power(lam,len(t)-j+2)
+	
+	kprime_table[i][len(s)][len(t)] = lam*calc_k_prime(s[:-1],t,i,lam,kprime_table)+summation
+	return kprime_table[i][len(s)][len(t)]
+	
+def calc_k(s,t,i,lam,k_table,kprime_table):
+	if k_table[i][len(s)][len(t)] > 0:
+		return k_table[i][len(s)][len(t)]
+
+	if min(len(s),len(t)) < i:
+		k_table[i][len(s)][len(t)] = 0
+		return k_table[i][len(s)][len(t)]
+	
+	summation = 0
+	x=s[-1]
+	indices = get_all_indices_contain(t,x)
+	for j in indices:
+		summation += calc_k_prime(s[:-1],t[0:j-1],i-1,lam,kprime_table)*np.power(lam,2)
+	
+	k_table[i][len(s)][len(t)] = calc_k(s[:-1],t,i,lam,k_table,kprime_table)+summation
+	return k_table[i][len(s)][len(t)]
+
+def ssk(s,t,k,lam):
+	k_table = np.zeros((k+1,len(s)+1,len(t)+1))
+	kprime_table = np.zeros((k+1,len(s)+1,len(t)+1))
+	return calc_k(s,t,k,lam,k_table,kprime_table)
+	
+def ssk_normalized(s,t,k,lam):
+	kernel_st = ssk(s,t,k,lam)
+	kernel_ss = ssk(s,s,k,lam)
+	kernel_tt = ssk(t,t,k,lam)
+	return kernel_st/(np.sqrt(kernel_ss*kernel_tt))
+	
+def create_gram_matrix(documents,k,lam,isNormalized = True):
+	n = len(documents)
+	G = np.zeros((n,n))
+	for i in range(n):
+		for j in range(n):
+			if i <= j: #K(s,t) = K(t,s), only want triangular matrix
+				if isNormalized:
+					G[i][j] = ssk_normalized(documents[i],documents[j],k,lam)
+				else:
+					G[i][j] = ssk(documents[i],documents[j],k,lam)
+	return G
+
+class Test(unittest.TestCase):
+
+	def test_1(self):
+		s="car"
+		t="cat"
+		k=2
+		lam=0.5
+		self.assertEqual(ssk(s,t,k,lam),lam**4)
+
+
+if __name__ == '__main__':
+	unittest.main()
