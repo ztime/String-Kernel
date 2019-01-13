@@ -5,6 +5,7 @@ Date: 10th Jan 2019
 
 import itertools
 import numpy as np
+import unittest
 
 def find_indices_with_substring(s,k,substring):
 	start = 0
@@ -51,55 +52,56 @@ def naive(s,t,k,lam):
 	
 	return kernel_sum
 
-s="car"
-t="cat"
-k=2
-lam=0.5
-#can see that it obtains lambda^4 as kernel value
-print(naive(s,t,k,lam),lam**4)
-
+'''
+Given string t and char x, finds all indices
+where x appears in t. Note that indexing is 
+counted starting at 1
+'''
 def get_all_indices_contain(t,x):
 	indices = []
-	index = 0
+	index = 1
 	for char in t:
 		if char == x:
 			indices.append(index)
 		index += 1
 	return indices
 
-
 def calc_k_prime(s,t,i,lam):
-	if i == 0:
+	if i==0:
 		return 1
-	elif min(len(s),len(t)) < i == 0:
+	elif min(len(s),len(t)) < i:
 		return 0
 	
-	summation = 0	
-	indices = get_all_indices_contain(t,s[-1])
-	for index in indices:
-		if index < 1:
-			t_val = ""
-		else:
-			t_val = t[1:index-1]
-		summation += calc_k_prime(s,t_val,i-1,lam)*np.power(lam,len(t)-index+2)	
+	summation = 0
+	x=s[-1]
+	indices = get_all_indices_contain(t,x)
+	for j in indices:
+		summation += calc_k_prime(s[:-1],t[0:j-1],i-1,lam)*np.power(lam,len(t)-j+2)
 	
-	return lam*calc_k_prime(s[:-1],t,i-1,lam)+summation
-		
+	return lam*calc_k_prime(s[:-1],t,i,lam)+summation
 	
 def calc_k(s,t,i,lam):
 	if min(len(s),len(t)) < i:
 		return 0
 	
-	indices = get_all_indices_contain(t,s[-1])
 	summation = 0
-	for index in indices:
-		if index < 1:
-			t_val = ""
-		else:
-			t_val = t[1:index-1]
-		summation += calc_k_prime(s,t_val,i-1,lam)*np.power(lam,2)
-
-	return calc_k(s[:-1],t,i,lam) + summation
-
+	x=s[-1]
+	indices = get_all_indices_contain(t,x)
+	for j in indices:
+		summation += calc_k_prime(s[:-1],t[0:j-1],i-1,lam)*np.power(lam,2)
 	
-print(calc_k("car","cat",2,0.5))
+	return calc_k(s[:-1],t,i,lam)+summation
+
+
+class Test(unittest.TestCase):
+
+	def test_1(self):
+		s="car"
+		t="cat"
+		k=2
+		lam=0.5
+		self.assertEqual(calc_k(s,t,k,lam),lam**4)
+
+
+if __name__ == '__main__':
+	unittest.main()
