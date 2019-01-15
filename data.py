@@ -2,7 +2,7 @@ import sys
 import string
 import os
 import pickle
-from bs4 import BeautifulSoup
+#from bs4 import BeautifulSoup
 from pprint import pprint
 
 DATA_FOLDER = 'reuters-dataset'
@@ -50,7 +50,7 @@ class ReutersEntry:
         # 3-grams definitions
         # "Stride"- like three gram
         self.stride_3_grams = None
-        # Full 3 gram 
+        # Full 3 gram
         self.full_3_grams = None
         # Run init functions
         #We calculate contigous for the first 100 entries
@@ -59,12 +59,12 @@ class ReutersEntry:
 
     def __str__(self):
         topics = ','.join(self.topics)
-        raw_string = "ID:%d, Topics:%s, Lewis-split:%s, Clean body:%s..." 
+        raw_string = "ID:%d, Topics:%s, Lewis-split:%s, Clean body:%s..."
         return raw_string % (self.id, topics, self.lewis_split, self.clean_body[0:50])
     '''
     Calculates all continous 3-grams for this entry
     NOTE: Any 3-gram not in the text will not be found as a key
-    in the dictionary. Use "dictionary.get('alg')" instead of 
+    in the dictionary. Use "dictionary.get('alg')" instead of
     dictionary['alg'] (".get" returns None if there is no such key)
     '''
     def calc_stride_3_grams(self):
@@ -118,7 +118,7 @@ def create_all_entries_list():
 Returns a list with <Reuter> objects representing the whole
 dataset in order
 
-If there is a pickled file, it loads from that, otherwise 
+If there is a pickled file, it loads from that, otherwise
 it creates it and saves it
 '''
 def load_all_entries():
@@ -138,11 +138,10 @@ def load_all_entries():
     f.close()
     #Done here
     return all_entries
-    
+
 
 #NOTE: For debugging purposes
 if __name__ == '__main__':
     all_entries = load_all_entries()
     for e in all_entries[0:20]:
         print(e)
-
