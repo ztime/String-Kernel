@@ -2,7 +2,7 @@ import sys
 import string
 import os
 import pickle
-#from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup
 from pprint import pprint
 
 DATA_FOLDER = 'reuters-dataset'
@@ -42,8 +42,7 @@ class ReutersEntry:
         self.topics = []
         for topic in entry.topics.find_all('d'):
             self.topics.append(topic.get_text())
-        if entry.body is not None:
-            # self.clean_body = filter_body(entry.body.get_text())
+        if entry.text is not None:
             self.clean_body = filter_body(entry.text)
         else:
             self.clean_body = ''
@@ -82,6 +81,7 @@ def parse_file(filename):
     with open(DATA_FOLDER + "/" + filename, 'r') as f:
         file_contents = f.readlines()
     return BeautifulSoup(' '.join(file_contents), 'html.parser')
+    # return BeautifulSoup(' '.join(file_contents), 'lxml')
 
 '''
 Filters a CLEAN body and returns a string with lowercase chars
