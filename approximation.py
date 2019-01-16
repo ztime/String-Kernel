@@ -3,6 +3,7 @@ import numpy as np
 import math
 from operator import itemgetter
 from data import load_all_entries, ReutersEntry
+from ssk import normalized_ssk
 
 
 def contiguos_from_first_100_entries(all_entries):
@@ -35,7 +36,27 @@ def gram_similarity(K1, K2):
             sum_k2_k2 = K2[i][j] * K2[i][j]
     return sum_k1_k2 / math.sqrt(sum_k1_k1 * sum_k2_k2)
 
+'''
+Takes a set S and a list of documents
+creates an approximation of a kernel using
+K(x,z) = sum [ For all s in S K(x,s) * K(z,s) ]
+'''
+def approximate_matrix(S, documents, k, l):
+    s_doc_table = compute_s_doc_table(S,documents,k,l)
+
+def compute_s_doc_table(S,documents,k,l):
+    # contains K(x,s) for all documents and substrings
+    s_doc_table = np.zeros((len(S), len(documents)))
+    for s in range(len(S)):
+        for doc in range(len(documents)):
+
+
+    return s_doc_table
+
+
 if __name__ == '__main__':
     entries = load_all_entries()
-    print(contiguos_from_first_100_entries(entries))
+    first_100 = [ x.clean_body for x in entries[:10] ]
+    substrings = [ 'abc', 'bcd' ]
+    approximate_matrix(substrings, first_100, 3, 0.5)
 
