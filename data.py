@@ -42,15 +42,14 @@ class ReutersEntry:
         self.topics = []
         for topic in entry.topics.find_all('d'):
             self.topics.append(topic.get_text())
-        if entry.body is not None:
-            # self.clean_body = filter_body(entry.body.get_text())
+        if entry.text is not None:
             self.clean_body = filter_body(entry.text)
         else:
             self.clean_body = ''
         # 3-grams definitions
         # "Stride"- like three gram
         self.stride_3_grams = None
-        # Full 3 gram 
+        # Full 3 gram
         self.full_3_grams = None
         # Run init functions
         #We calculate contigous for the first 100 entries
@@ -59,12 +58,12 @@ class ReutersEntry:
 
     def __str__(self):
         topics = ','.join(self.topics)
-        raw_string = "ID:%d, Topics:%s, Lewis-split:%s, Clean body:%s..." 
+        raw_string = "ID:%d, Topics:%s, Lewis-split:%s, Clean body:%s..."
         return raw_string % (self.id, topics, self.lewis_split, self.clean_body[0:50])
     '''
     Calculates all continous 3-grams for this entry
     NOTE: Any 3-gram not in the text will not be found as a key
-    in the dictionary. Use "dictionary.get('alg')" instead of 
+    in the dictionary. Use "dictionary.get('alg')" instead of
     dictionary['alg'] (".get" returns None if there is no such key)
     '''
     def calc_stride_3_grams(self):
@@ -82,6 +81,7 @@ def parse_file(filename):
     with open(DATA_FOLDER + "/" + filename, 'r') as f:
         file_contents = f.readlines()
     return BeautifulSoup(' '.join(file_contents), 'html.parser')
+    # return BeautifulSoup(' '.join(file_contents), 'lxml')
 
 '''
 Filters a CLEAN body and returns a string with lowercase chars
@@ -118,7 +118,7 @@ def create_all_entries_list():
 Returns a list with <Reuter> objects representing the whole
 dataset in order
 
-If there is a pickled file, it loads from that, otherwise 
+If there is a pickled file, it loads from that, otherwise
 it creates it and saves it
 '''
 def load_all_entries():
@@ -138,11 +138,10 @@ def load_all_entries():
     f.close()
     #Done here
     return all_entries
-    
+
 
 #NOTE: For debugging purposes
 if __name__ == '__main__':
     all_entries = load_all_entries()
     for e in all_entries[0:20]:
         print(e)
-
