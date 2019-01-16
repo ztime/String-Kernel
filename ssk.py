@@ -1,166 +1,148 @@
-'''
-Author: Arsalan Syed
-Date: 10th Jan 2019
-'''
-
-import itertools
-import numpy as np
 import unittest
-from data import load_all_entries, ReutersEntry
-import sys
+import numpy as np
+import itertools
+import time
 
-sys.setrecursionlimit(4000)
-
-def find_indices_with_substring(s,k,substring):
-	start = 0
-	end = start+k
-	valid_indices = []
-	for i in range(len(s)-k+1):
-		if s[start:end] == substring:
-			valid_indices.append((start,end))
-		start += 1
-		end += 1
-	return valid_indices
-
-def index_length(indices):
-	return indices[1]-indices[0]
-
-def get_alphabet():
-	alphabet = []
-	for c in range(97,123):
-		alphabet.append(chr(c))
-	alphabet.append(' ')
-	return alphabet
-
-alphabet = get_alphabet()
-
-'''
-s,t are strings
-k is int
-lam: lambda (decay factor)
-
-Computes the kernel (SSK) using the naive algorithm
-'''
-def naive(s,t,k,lam):
-	kernel_sum = 0
-	finite_strings = [''.join(x) for x in itertools.permutations(alphabet,k)]
-
-	for substring in finite_strings:
-		s_indices = find_indices_with_substring(s,k,substring)
-		t_indices = find_indices_with_substring(t,k,substring)
-
-		for s_index in s_indices:
-			for t_index in t_indices:
-
-				kernel_sum += np.power(lam,index_length(s_index)+index_length(t_index))
-
-	return kernel_sum
-
-
-storage = {}
-
-'''
-Given string t and char x, finds all indices
-where x appears in t. Note that indexing is
-counted starting at 1
-'''
 def get_all_indices_contain(t,x):
-	key = t + ' ' + x
-
-	if key not in storage:
-		indices = []
-		index = 1
-		for char in t:
-			if char == x:
-				indices.append(index)
-			index += 1
-		storage[key] = indices
-		return indices
-	else:
-		return storage[key]
+    indices = []
+    index = 1
+    for char in t:
+        if char == x:
+            indices.append(index)
+        index += 1
+    return indices
 
 
-def calc_k_bis(s,t,i,lam, kprime_table):
-	summation = 0
-	x=s[-1]
-	indices = get_all_indices_contain(t,x)
-	for j in indices:
-		summation += calc_k_prime(s[:-1],t[0:j-1],i-1,lam,kprime_table)*np.power(lam,len(t)-j+2)
-	return summation
+def calculate_K(s, t, k, lam, K_prime):
+    K = 0
+    for i in range(k, len(s)+1):
+        x = s[i-1]
+        indices = get_all_indices_contain(t,x)
+        for index in indices:
+            K += K_prime[k-1,len(s[:i-1]),index-1] * lam * lam
 
-def calc_k_prime(s,t,i,lam,kprime_table):
-	if kprime_table[i][len(s)][len(t)] > 0:
-		return kprime_table[i][len(s)][len(t)]
+    return K
 
-	if i==0:
-		kprime_table[i][len(s)][len(t)] = 1
-		return kprime_table[i][len(s)][len(t)]
-	elif min(len(s),len(t)) < i:
-		kprime_table[i][len(s)][len(t)] = 0
-		return kprime_table[i][len(s)][len(t)]
-
-
-	#print(t, x, indices)
-
-	kprime_table[i][len(s)][len(t)] = lam*calc_k_prime(s[:-1],t,i,lam,kprime_table)+calc_k_bis(s,t,i,lam,kprime_table)
-	return kprime_table[i][len(s)][len(t)]
-
-def calc_k(s,t,i,lam,k_table,kprime_table):
-	if k_table[i][len(s)][len(t)] > 0:
-		return k_table[i][len(s)][len(t)]
-
-	if min(len(s),len(t)) < i:
-		k_table[i][len(s)][len(t)] = 0
-		return k_table[i][len(s)][len(t)]
-
-	summation = 0
-	x=s[-1]
-	indices = get_all_indices_contain(t,x)
-	for j in indices:
-		summation += calc_k_prime(s[:-1],t[0:j-1],i-1,lam,kprime_table)*np.power(lam,2)
-
-	k_table[i][len(s)][len(t)] = calc_k(s[:-1],t,i,lam,k_table,kprime_table)+summation
-	return k_table[i][len(s)][len(t)]
+def precalculate_K_prime(s_string, t_string, k_in, lamb, K_prime, K_bis):
+    length_s = len(s_string) + 1
+    length_t = len(t_string) + 1
+    for k in range(1, k_in):
+        # for the upper and left edge of the K_prime matrix
+        # the value is already precalculated as it will always be 0
+        # so we start at 1 (for K_bis this also holds true but value
+        # is 0)
+        for s in range(1, length_s):
+            for t in range(1, length_t):
+                #from definition of K_prime
+                if min(s,t) < k:
+                    K_prime[k,s,t] = 0.0
+                    #done here!
+                    continue
+                #calc K_bis
+                # -1 because we need to use the empty string aswell
+                if s_string[s-1] == t_string[t-1]:
+                # if s_string[s] == t_string[t]:
+                    K_bis[k,s,t] = lamb * ( K_bis[k,s,t-1] + lamb * K_prime[k-1,s-1,t-1] )
+                else:
+                    K_bis[k,s,t] = lamb * K_bis[k,s,t-1]
+                K_prime[k,s,t] = lamb * K_prime[k,s-1,t] + K_bis[k,s,t]
+    return K_prime
 
 def ssk(s,t,k,lam):
-	k_table = np.zeros((k+1,len(s)+1,len(t)+1))
-	kprime_table = np.zeros((k+1,len(s)+1,len(t)+1))
-	return calc_k(s,t,k,lam,k_table,kprime_table)
+    #Skapa k_p och k_b
+    K_prime = np.zeros((k, len(s)+1, len(t)+1))
+    K_bis = np.zeros((k, len(s)+1, len(t)+1))
+    # K'0(s,t) = 1, for all s, t
+    K_prime[0,:,:] = np.ones((1, len(s)+1, len(t)+1))
 
-def ssk_normalized(s,t,k,lam):
-	kernel_st = ssk(s,t,k,lam)
-	kernel_ss = ssk(s,s,k,lam)
-	kernel_tt = ssk(t,t,k,lam)
-	return kernel_st/(np.sqrt(kernel_ss*kernel_tt))
+    precalculate_K_prime(s,t, k, lam, K_prime, K_bis)
+    return calculate_K(s, t, k, lam, K_prime)
 
-def create_gram_matrix(documents,k,lam,isNormalized = True):
-	n = len(documents)
-	G = np.zeros((n,n))
-	for i in range(n):
-		for j in range(n):
-			if i <= j: #K(s,t) = K(t,s), only want triangular matrix
-				if isNormalized:
-					G[i][j] = ssk_normalized(documents[i],documents[j],k,lam)
-				else:
-					G[i][j] = ssk(documents[i],documents[j],k,lam)
-	return G
+def ssk_tuple_args(tuple_args):
+    x,y,s,t,k,lam = tuple_args
+    #Skapa k_p och k_b
+    #K_prime = np.zeros((k, len(s)+1, len(t)+1))
+    K_prime = np.ones((k, len(s)+1, len(t)+1))
+    K_bis = np.zeros((k, len(s)+1, len(t)+1))
+    # K'0(s,t) = 1, for all s, t
+    #K_prime[0,:,:] = np.ones((1, len(s)+1, len(t)+1))
 
-class Test(unittest.TestCase):
+    precalculate_K_prime(s,t, k, lam, K_prime, K_bis)
+    calc_k = calculate_K(s, t, k, lam, K_prime)
+    print("Calculated gram[%d,%d]" % (x,y))
+    return calc_k
 
-	def test_1(self):
-		s="science is organized knowlage"
-		t="wisdom is organized life"
-		k=2
-		lam=0.5
-		print(ssk_normalized(s,t,k,lam))
-		#	self.assertEqual(ssk(s,t,k,lam),lam**4)
+def normalized_ssk(s, t, k, lam):
+    kernel_ss = ssk(s,s,k,lam)
+    kernel_tt = ssk(t,t,k,lam)
+    kernel_st = ssk(s,t,k,lam)
+    return kernel_st / (np.sqrt(kernel_ss * kernel_tt))
 
+# def create_gram_matrix_approximation(S, documents, k, lam):
+
+
+'''
+Creates a matrix where
+       <----- documents ---->
+       ^
+       |
+       |
+       S
+       |
+       |
+
+essentially [x,a] represents K(x,a) where
+x is a document and a is a 3gram
+'''
+# def create_documents_s_matrix(S,documents, k, lam):
+    # np.zeros()
+
+
+def create_gram_matrix_from_documents(documents, k, lam):
+    num_docs = len(documents)
+    print("Calculating %dx%d gram matrix" % (num_docs, num_docs))
+    entries = num_docs * num_docs
+    gram = np.zeros((num_docs, num_docs))
+    average_counter = 0.0
+    average_running = 0.0
+    average_total = 0.0
+    for x,y in itertools.product(range(num_docs),range(num_docs)):
+        start_time = time.time()
+        gram[x,y] = ssk(documents[x], documents[y], k, lam)
+        end_time = time.time()
+        elapsed_seconds = end_time - start_time
+        average_counter += 1.0
+        average_total += elapsed_seconds
+        average_running = average_total / average_counter
+        estimate = (entries - average_counter) * average_running
+        unit_time = "s"
+        if estimate > 3600:
+            estimate /= 3600.0
+            unit_time = "h"
+        elif estimate > 60:
+            estimate /= 60
+            unit_time = "m"
+        print("Calculated [%d,%d] (Average: %d seconds, estimited time left:%d%s)" % (x,y,average_running, estimate, unit_time))
+    return gram
 
 if __name__ == '__main__':
-	s="science is organized knowledge"
-	t="wisdom is organized life"
-	k=2
-	lam=0.5
-
-	print(ssk_normalized(s,t,k,lam))
-	#unittest.main()
+    #Test
+    s = "science is organized knowledge"
+    t = "wisdom is organized life"
+    for l in [ x / 10.0 for x in range(1,11,1)]:
+        print("----------------------------")
+        for k in range(1, 7):
+            print("K_%d l = %f: %f" % (k, l, normalized_ssk(s, t, k, l)))
+    print("-----------------------------------")
+    s = "cat"
+    t = "rca"
+    print("K_%d l = %f: %f" % (2, 0.5, ssk(s, t, 2, 0.5)))
+    asd
+    #Testing 100x100
+    from data import load_all_entries, ReutersEntry
+    import sys
+    sys.setrecursionlimit(4000)
+    all_entries = load_all_entries()
+    first_100 = [ x.clean_body for x in all_entries[:2] ]
+    gram = create_gram_matrix_from_documents(first_100, 3, 0.5)
+    # gram = create_gram_matrix_from_documents(['abc', first_100, 3, 0.5)
