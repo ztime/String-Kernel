@@ -85,6 +85,8 @@ def compute_s_doc_table(S,documents,k,l):
             time_end = time.time()
             average_counter += 1.0
             average_total += time_end - time_start
+            if s % 500 == 0:
+                print("Currently: %d" % s)
         average_running = average_total / average_counter
         print("Time: %d Average: %f s" % (time_end - time_start, average_running))
     return s_doc_table
@@ -133,13 +135,10 @@ def load_precalc_s_s():
 if __name__ == '__main__':
     entries = load_all_entries()
     all_bodies = [ (x.id, x.clean_body) for x in entries  ]
-    save_sub_string_index()
-    substrings_index = load_sub_string_index()
-    quit()
     substrings = create_all_substrings()
-    s_doc_table = approximate_matrix(substrings, all_bodies[:100], 3, 0.5)
-    # f = open('pickels/s_d_matrix_all_substrings_full_training_set_k_3_lambda_0_5.pkl', 'wb')
-    # pickle.dump(s_doc_table, f)
-    # f.close()
+    s_doc_table = compute_s_doc_table(substrings, all_bodies[:100], 3, 0.5)
+    f = open('pickels/s_doc_table_all_substrings_100_first_set_k_3_lambda_0_5.pkl', 'wb')
+    pickle.dump(s_doc_table, f)
+    f.close()
     # precalc_s_s(all_bodies, 3, 0.5)
 
