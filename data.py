@@ -108,10 +108,13 @@ def create_all_entries_list():
         file_soup = parse_file(DATA_FILENAME % file_index)
         no_file = 1
         for entry in file_soup.find_all('reuters'):
+            if entry['lewissplit'] == 'NOT-USED' or entry['topics'] != 'YES':
+                continue
             print("\tParsing entry %d     \r" % no_file, end='')
             all_entries.append(ReutersEntry(entry))
             no_file += 1
         print("\nDone")
+    print("Total of %d files" % len(all_entries))
     return all_entries
 
 '''
