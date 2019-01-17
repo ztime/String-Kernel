@@ -60,10 +60,14 @@ def approximate_matrix():
     gram_matrix = np.zeros((no_documents, no_documents))
     for i,j in itertools.product(range(no_documents), range(no_documents)):
         print("Calculating %d,%d" % (i,j))
-        summa = 0
+        summa_s_t = 0.0
+        summa_s_s = 0.0
+        summa_t_t = 0.0
         for m in range(no_substrings):
-            summa += s_doc_table[m,i] * s_doc_table[m,j]
-        gram_matrix[i,j] = summa
+            summa_s_t += s_doc_table[m,i] * s_doc_table[m,j]
+            summa_s_s += 2 * s_doc_table[m,i]
+            summa_t_t += 2 * s_doc_table[m,j]
+        gram_matrix[i,j] = summa_s_t / ( np.sqrt(summa_s_s * summa_t_t))
     return gram_matrix
             
 
@@ -156,7 +160,7 @@ if __name__ == '__main__':
     substrings = create_all_substrings()
 
     gram_matrix = approximate_matrix()
-    f = open('pickels/gram_matrix_all_features_100_first_documents_k_3_lambda_0_5.pkl', 'wb')
+    f = open('pickels/gram_matrix_all_features_100_first_documents_k_3_lambda_0_5_NORMALIZED.pkl', 'wb')
     pickle.dump(gram_matrix,f)
     f.close()
 
