@@ -2,7 +2,7 @@ import sys
 import string
 import os
 import pickle
-from bs4 import BeautifulSoup
+#from bs4 import BeautifulSoup
 from pprint import pprint
 
 DATA_FOLDER = 'reuters-dataset'
