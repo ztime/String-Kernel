@@ -13,6 +13,7 @@ class FileEnum(Enum):
     AFFIX = ".s_doc_table.pkl"
     K_3_100_FIRST_ALL_S = "k_3_100_first_docs_all_substrings"
     DOC_DOC_SSK_K_3 = "doc_doc_ssk_k_3_l_0_5"
+    SUBSTRINGS_INDEX = "pickels/all_sub_strings_index.pkl"
 
 
 def contiguos_from_first_100_entries(all_entries):
@@ -64,18 +65,22 @@ def compute_s_doc_table(S,documents,k,l):
     average_running = 0.0
     s_doc_table = np.zeros((len(S), len(documents)))
     sub_precomputed = dict()
+    s_s = load_precalc_s_s()
     for doc in range(len(documents)):
+        doc_id = documents[doc][0]
+        doc_content = documents[doc][1]
         print("Calculating for document %d" % doc)
         time_start = time.time()
-        ss_ssk = ssk(documents[doc],documents[doc],k,l)
+        # ss_ssk = ssk(documents[doc],documents[doc],k,l)
+        ss_ssk = s_s[doc_id]
         time_end = time.time()
         average_total += time_end - time_start
         for s in range(len(S)):
             time_start = time.time()
             if S[s] not in sub_precomputed:
                 sub_precomputed[S[s]] = ssk(S[s],S[s],k,l)
-            s_doc_table[s,doc] = ssk(documents[doc],S[s],k,l)
-            st = ssk(documents[doc],S[s],k,l)
+            # s_doc_table[s,doc] = ssk(doc_content,S[s],k,l)
+            st = ssk(doc_content,S[s],k,l)
             s_doc_table[s,doc] = st / np.sqrt(ss_ssk * sub_precomputed[S[s]])
             time_end = time.time()
             average_counter += 1.0
@@ -93,6 +98,21 @@ def create_all_substrings():
                 all_subs.append("%s%s%s" % (ALLOWED_CHARS[i],ALLOWED_CHARS[j],ALLOWED_CHARS[k]))
     return all_subs
 
+def save_sub_string_index():
+    all_substrings = create_all_substrings()
+    index_mapping = dict()
+    for i in range(len(all_substrings)):
+        index_mapping[all_substrings[i]] = i
+    f = open("pickels/all_sub_strings_index.pkl", 'wb')
+    pickle.dump(index_mapping, f)
+    f.close()
+
+def load_sub_string_index():
+    with open("pickels/all_sub_strings_index.pkl", 'rb') as f:
+        mapping = pickle.load(f)
+    return mapping
+
+
 def precalc_s_s(documents,k,l):
     s_s = dict()
     counter = 1
@@ -104,11 +124,22 @@ def precalc_s_s(documents,k,l):
     pickle.dump(s_s, f)
     f.close()
 
+def load_precalc_s_s():
+    with open('pickels/s_s_k_3_l_0_5_all_documents.pkl', 'rb') as f:
+        s_s = pickle.load(f)
+    return s_s
+
 
 if __name__ == '__main__':
     entries = load_all_entries()
-    all_bodies = [ (x.id, x.clean_body) for x in entries ]
+    all_bodies = [ (x.id, x.clean_body) for x in entries  ]
+    save_sub_string_index()
+    substrings_index = load_sub_string_index()
+    quit()
     substrings = create_all_substrings()
-    # approximate_matrix(substrings[:50], first_100[1:5], 3, 0.5)
-    precalc_s_s(all_bodies, 3, 0.5)
+    s_doc_table = approximate_matrix(substrings, all_bodies[:100], 3, 0.5)
+    # f = open('pickels/s_d_matrix_all_substrings_full_training_set_k_3_lambda_0_5.pkl', 'wb')
+    # pickle.dump(s_doc_table, f)
+    # f.close()
+    # precalc_s_s(all_bodies, 3, 0.5)
 
