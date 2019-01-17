@@ -126,7 +126,7 @@ def __DxS_worker__(thread_id, S, k, l, DxD, arg):
         speed = acc_length / (time.time()-t0)
         arrival = total_length / speed
         print(offset + f'Current speed: {speed} char/s')
-        print(offset + f'Expected arrival in: {arrival/60:.2f} minutes')
+        print(offset + f'Expected arrival in: {arrival/60/60:.2f} h')
         print(offset + '-' * 50)
     output.put((thread_id, sub_Ds_table))
 
