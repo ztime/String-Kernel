@@ -7,6 +7,7 @@ from ssk import normalized_ssk, ssk
 from enum import Enum
 import time
 import pickle
+from multiprocessing.dummy import Pool as ThreadPool
 
 class FileEnum(Enum):
     AFFIX = ".s_doc_table.pkl"
@@ -92,9 +93,22 @@ def create_all_substrings():
                 all_subs.append("%s%s%s" % (ALLOWED_CHARS[i],ALLOWED_CHARS[j],ALLOWED_CHARS[k]))
     return all_subs
 
+def precalc_s_s(documents,k,l):
+    s_s = dict()
+    counter = 1
+    for (doc_id, doc) in documents:
+        print("Working on document %d with id: %d" % (counter, doc_id))
+        s_s[doc_id] = ssk(doc, doc, k,l)
+        counter += 1
+    f = open('pickels/s_s_k_3_l_0_5_all_documents.pkl', 'wb')
+    pickle.dump(s_s, f)
+    f.close()
+
+
 if __name__ == '__main__':
     entries = load_all_entries()
-    first_100 = [ x.clean_body for x in entries ]
+    all_bodies = [ (x.id, x.clean_body) for x in entries ]
     substrings = create_all_substrings()
-    approximate_matrix(substrings[:50], first_100[1:5], 3, 0.5)
+    # approximate_matrix(substrings[:50], first_100[1:5], 3, 0.5)
+    precalc_s_s(all_bodies, 3, 0.5)
 
