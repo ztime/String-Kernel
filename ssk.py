@@ -35,7 +35,7 @@ def precalculate_K_prime(s_string, t_string, k_in, lamb, K_prime, K_bis):
             for t in range(1, length_t):
                 #from definition of K_prime
                 if min(s,t) < k:
-                    K_prime[k,s,t] = 0.0
+                    # K_prime[k,s,t] = 0.0
                     #done here!
                     continue
                 #calc K_bis
@@ -73,9 +73,18 @@ def ssk_tuple_args(tuple_args):
     return calc_k
 
 def normalized_ssk(s, t, k, lam):
+    time_start = time.time()
     kernel_ss = ssk(s,s,k,lam)
+    time_end = time.time()
+    print("Time ss: %f" % (time_end - time_start))
+    time_start = time.time()
     kernel_tt = ssk(t,t,k,lam)
+    time_end = time.time()
+    print("Time tt: %f" % (time_end - time_start))
+    time_start = time.time()
     kernel_st = ssk(s,t,k,lam)
+    time_end = time.time()
+    print("Time st: %f" % (time_end - time_start))
     return kernel_st / (np.sqrt(kernel_ss * kernel_tt))
 
 # def create_gram_matrix_approximation(S, documents, k, lam):
