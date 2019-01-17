@@ -5,6 +5,7 @@ from operator import itemgetter
 from data import load_all_entries, ReutersEntry, ALLOWED_CHARS, SAVE_FOLDER
 from ssk import normalized_ssk, ssk
 from enum import Enum
+import random
 import time
 from operator import itemgetter
 import itertools
@@ -42,7 +43,7 @@ def gram_similarity(K1, K2):
     sum_k1_k2 = 0.0
     m = K1.shape[0]
     for i in range(m):
-        print("i: %d" % m)
+        # print("i: %d" % m)
         for j in range(m):
             sum_k1_k1 += K1[i][j] * K1[i][j]
             sum_k1_k2 += K1[i][j] * K2[i][j]
@@ -61,7 +62,7 @@ def approximate_matrix():
     no_substrings, no_documents = s_doc_table.shape
     gram_matrix = np.zeros((no_documents, no_documents))
     for i,j in itertools.product(range(no_documents), range(no_documents)):
-        print("Calculating %d,%d" % (i,j))
+        # print("Calculating %d,%d" % (i,j))
         summa_s_t = 0.0
         summa_s_s = 0.0
         summa_t_t = 0.0
@@ -175,19 +176,44 @@ def get_n_grams_in_100_first_docs():
             n_gram_indexes.append((inv_mapping[i], summed[i]))
     substrings = create_all_substrings()
     top_sorted_n_grams = sorted(n_gram_indexes, key=itemgetter(1), reverse=True)
+    top_sorted_only_n_gram = [ k[0] for k in top_sorted_n_grams ]
     inv_sorted_n_grams = sorted(n_gram_indexes, key=itemgetter(1))
-
-    prefix_top_features = "gram_matrix_%d_top_features_100_first_documents_k_3_lambda_0_5_NORMALIZED.pkl"
-    prefix_inv_features = "gram_matrix_%d_inv_features_100_first_documents_k_3_lambda_0_5_NORMALIZED.pkl"
-    prefix_rnd_features = "gram_matrix_%d_rnd_features_100_first_documents_k_3_lambda_0_5_NORMALIZED.pkl"
+    inv_sorted_only_n_gram = [ k[0] for k in inv_sorted_n_grams ]
+    
+    # prefix_top_features = "pickels/gram_matrix_%d_top_features_100_first_documents_k_3_lambda_0_5_NORMALIZED.pkl"
+    prefix_inv_features = "pickels/approx_for_graph/gram_matrix_%d_inv_features_100_first_documents_k_3_lambda_0_5_NORMALIZED.pkl"
+    # prefix_rnd_features = "pickels/gram_matrix_%d_rnd_features_100_first_documents_k_3_lambda_0_5_NORMALIZED.pkl"
     grams = []
-    for index in n_gram_indexes:
-        grams.append(inv_mapping[index])
+    feature_range = [ x for x in range(5, 200, 5) ]
+    # feature_range_2 = [ x for x in range(200, 10200, 200) ]
+    feature_range_2 = [ x for x in range(200, 3000, 200) ]
+    feature_range_3 = [ x for x in range(3000, 7000, 1000) ]
+    feature_range.extend(feature_range_2)
+    feature_range.extend(feature_range_3)
+    feature_range.append(10000)
+    for features in feature_range:
+        # print("Calculating for %d" % features)
+        # top_ssk = approximate_matrix_from_subset(top_sorted_only_n_gram[:features])
+        # top_ssk_name = prefix_top_features % features
+        # f = open(top_ssk_name, 'wb')
+        # pickle.dump(top_ssk,f)
+        # f.close()
+        inv_ssk = approximate_matrix_from_subset(inv_sorted_only_n_gram[:features])
+        inv_ssk_name = prefix_inv_features % features
+        f = open(inv_ssk_name, 'wb')
+        pickle.dump(inv_ssk,f)
+        f.close()
+        # rnd_ssk = approximate_matrix_from_subset(random.sample(top_sorted_only_n_gram, features))
+        # rnd_ssk_name = prefix_rnd_features % features
+        # f = open(rnd_ssk_name, 'wb')
+        # pickle.dump(rnd_ssk,f)
+        # f.close()
 
-    gram_matrix = approximate_matrix_from_subset(grams)
-    f = open('pickels/stuff', 'wb')
-    pickle.dump(gram_matrix,f)
-    f.close()
+
+    # gram_matrix = approximate_matrix_from_subset(grams)
+    # f = open('pickels/stuff', 'wb')
+    # pickle.dump(gram_matrix,f)
+    # f.close()
     
 
 def approximate_matrix_from_subset(subset):
@@ -198,7 +224,7 @@ def approximate_matrix_from_subset(subset):
     gram_matrix = np.zeros((no_documents, no_documents))
     mapping = load_sub_string_index()
     for i,j in itertools.product(range(no_documents), range(no_documents)):
-        print("Calculating %d,%d" % (i,j))
+        # print("Calculating %d,%d" % 
         summa_s_t = 0.0
         summa_s_s = 0.0
         summa_t_t = 0.0
