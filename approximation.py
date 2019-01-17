@@ -123,7 +123,7 @@ def __DxS_worker__(thread_id, S, k, l, DxD, arg):
         print(offset + f'Doc length was {l}')
         print(offset + f'Doc {doc_finished}/{len(arg[0])}')
         print(offset + f'Time passed since start: {time.time()-t0:.2f}s')
-        speed = acc_length / time.time()-t0
+        speed = acc_length / (time.time()-t0)
         arrival = total_length / speed
         print(offset + f'Current speed: {speed} char/s')
         print(offset + f'Expected arrival in: {arrival/60:.2f} minutes')
