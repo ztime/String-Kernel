@@ -2,6 +2,12 @@ import unittest
 import numpy as np
 import itertools
 import time
+from data import load_all_entries, ReutersEntry
+import pickle
+import os
+import sys
+
+FULL_STRING_PATH = './pickels'
 
 def get_all_indices_contain(t,x):
     indices = []
@@ -48,7 +54,7 @@ def precalculate_K_prime(s_string, t_string, k_in, lamb, K_prime, K_bis):
                 K_prime[k,s,t] = lamb * K_prime[k,s-1,t] + K_bis[k,s,t]
     return K_prime
 
-def ssk(s,t,k,lam):
+def ssk(s,t,k,lam, K_prime=None):
     #Skapa k_p och k_b
     K_prime = np.zeros((k, len(s)+1, len(t)+1))
     K_bis = np.zeros((k, len(s)+1, len(t)+1))
@@ -72,14 +78,14 @@ def ssk_tuple_args(tuple_args):
     print("Calculated gram[%d,%d]" % (x,y))
     return calc_k
 
-def normalized_ssk(s, t, k, lam):
-    kernel_ss = ssk(s,s,k,lam)
-    kernel_tt = ssk(t,t,k,lam)
-    kernel_st = ssk(s,t,k,lam)
+def normalized_ssk(s, t, k, lam, K_primes=[None] * 3):
+    kernel_ss = ssk(s,s,k,lam, K_primes[0])
+    kernel_tt = ssk(t,t,k,lam, K_primes[1])
+    kernel_st = ssk(s,t,k,lam, K_primes[2])
     return kernel_st / (np.sqrt(kernel_ss * kernel_tt))
 
-# def create_gram_matrix_approximation(S, documents, k, lam):
 
+# def create_gram_matrix_approximation(S, documents, k, lam):
 
 '''
 Creates a matrix where
@@ -94,55 +100,75 @@ Creates a matrix where
 essentially [x,a] represents K(x,a) where
 x is a document and a is a 3gram
 '''
-# def create_documents_s_matrix(S,documents, k, lam):
-    # np.zeros()
+def calculate_Gram_matrix_from_docs(documents, k, lam=0.5, normalized=True):
+	num_docs = len(documents)
+	print(f'Constructing Gram matrix of {num_docs}x{num_docs} documents (k={k})')
+	entries = num_docs * num_docs
+	average_counter = 0.0
+	average_running = 0.0
+	average_total = 0.0
 
+	GRAM = np.zeros((num_docs, num_docs))
+	SSK = {}
 
-def create_gram_matrix_from_documents(documents, k, lam):
-    num_docs = len(documents)
-    print("Calculating %dx%d gram matrix" % (num_docs, num_docs))
-    entries = num_docs * num_docs
-    gram = np.zeros((num_docs, num_docs))
-    average_counter = 0.0
-    average_running = 0.0
-    average_total = 0.0
-    for x,y in itertools.product(range(num_docs),range(num_docs)):
-        start_time = time.time()
-        gram[x,y] = ssk(documents[x], documents[y], k, lam)
-        end_time = time.time()
-        elapsed_seconds = end_time - start_time
-        average_counter += 1.0
-        average_total += elapsed_seconds
-        average_running = average_total / average_counter
-        estimate = (entries - average_counter) * average_running
-        unit_time = "s"
-        if estimate > 3600:
-            estimate /= 3600.0
-            unit_time = "h"
-        elif estimate > 60:
-            estimate /= 60
-            unit_time = "m"
-        print("Calculated [%d,%d] (Average: %d seconds, estimited time left:%d%s)" % (x,y,average_running, estimate, unit_time))
-    return gram
+	for x,y in itertools.product(range(num_docs),range(num_docs)):
+		start_time = time.time()
+
+		s, t = documents[x].clean_body, documents[y].clean_body
+		if normalized:
+			K_st = ssk(s, t, k, lam)
+
+			ss_cache_name = f'({documents[x].id}:{documents[x].id})'
+			tt_cache_name = f'({documents[y].id}:{documents[y].id})'
+
+			if ss_cache_name not in SSK:
+				SSK[ss_cache_name] = ssk(s, s, k, lam)
+			K_ss = SSK[ss_cache_name]
+
+			if tt_cache_name not in SSK:
+				SSK[tt_cache_name] = ssk(t, t, k, lam)
+			K_tt = SSK[tt_cache_name]
+
+			GRAM[x, y] = K_st / (np.sqrt(K_ss * K_tt))
+		else:
+			GRAM[x, y] = K_st = ssk(s, t, k, lam)
+
+		end_time = time.time()
+		elapsed_seconds = end_time - start_time
+		average_counter += 1.0
+		average_total += elapsed_seconds
+		average_running = average_total / average_counter
+		estimate = (entries - average_counter) * average_running
+		unit_time = "s"
+		if estimate > 3600:
+			estimate /= 3600.0
+			unit_time = "h"
+		elif estimate > 60:
+			estimate /= 60
+			unit_time = "m"
+		print("Calculated [%d,%d] (Average: %d seconds, estimited time left:%d%s)" % (x,y,average_running, estimate, unit_time))
+	#store in pkl file
+	save_kernel(f'100_doc_gram_matrix', GRAM)
+
+def save_kernel(filename, data):
+	file = open(f'{FULL_STRING_PATH}/{filename}', 'wb')
+	pickle.dump(data, file)
+	file.close()
+
+def load_kernel(filename):
+	if os.path.isfile(f'{FULL_STRING_PATH}/{filename}'):
+		with open(f'{FULL_STRING_PATH}/{filename}', 'rb') as f:
+			K_prime = pickle.load(f)
+	if not isinstance(K_prime, np.ndarray):
+		print(f'PKL not found: {filename}')
+		print('Force quit..')
+		sys.exit()
+	return K_prime
 
 if __name__ == '__main__':
-    #Test
-    s = "science is organized knowledge"
-    t = "wisdom is organized life"
-    for l in [ x / 10.0 for x in range(1,11,1)]:
-        print("----------------------------")
-        for k in range(1, 7):
-            print("K_%d l = %f: %f" % (k, l, normalized_ssk(s, t, k, l)))
-    print("-----------------------------------")
-    s = "cat"
-    t = "rca"
-    print("K_%d l = %f: %f" % (2, 0.5, ssk(s, t, 2, 0.5)))
-    asd
-    #Testing 100x100
-    from data import load_all_entries, ReutersEntry
-    import sys
-    sys.setrecursionlimit(4000)
-    all_entries = load_all_entries()
-    first_100 = [ x.clean_body for x in all_entries[:2] ]
-    gram = create_gram_matrix_from_documents(first_100, 3, 0.5)
-    # gram = create_gram_matrix_from_documents(['abc', first_100, 3, 0.5)
+
+	# load first 100 documents
+	docs = load_all_entries()[:1]
+	lamb = 0.5
+	k = 3
+	calculate_Gram_matrix_from_docs(docs, k, lamb)

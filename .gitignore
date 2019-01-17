@@ -3,3 +3,6 @@
 
 #Pycache
 __pycache__/*
+
+#__kernel_cache__
+__kernel_cache__*
