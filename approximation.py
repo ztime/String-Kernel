@@ -100,7 +100,7 @@ def __DxS_worker__(thread_id, S, k, l, DxD, arg):
     acc_length = 0
 
     total_length = 0
-    for doc in arg[0]
+    for doc in arg[0]:
         total_length += len(doc[0])
 
     sub_Ds_table = np.zeros((len(S), len(arg[0])))
