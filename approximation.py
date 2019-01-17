@@ -299,13 +299,13 @@ if __name__ == '__main__':
     #pickle.dump(gram_matrix,f)
     #f.close()
 
-    entries = load_all_entries()[:10]
+    entries = load_all_entries()
     all_bodies = [(x.id, x.clean_body) for x in entries]
-    train_entries = [ (x.id, x.clean_body) for x in entries if x.lewis_split == 'TRAIN' ]
+    #train_entries = [ (x.id, x.clean_body) for x in entries if x.lewis_split == 'TRAIN' ]
     substrings = create_all_substrings()
 
-    SD_table = precompute_DxS_table(all_bodies, substrings, 3, 0.5, nworkers=3)
-    f = open('pickels/s_doc_table_all_substrings_100_first_set_k_3_lambda_0_5.pkl', 'wb')
+    SD_table = precompute_DxS_table(all_bodies, substrings, 3, 0.5, nworkers=7)
+    f = open('pickels/s_D_table_full_k_3_lambda_0_5.pkl', 'wb')
     pickle.dump(SD_table, f)
     f.close()
     # precalc_s_s(all_bodies, 3, 0.5)
