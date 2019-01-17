@@ -96,6 +96,12 @@ def __DxS_worker__(thread_id, S, k, l, DxD, arg):
     offset = '\t\t' * thread_id
 
     doc_finished = 0
+    t0 = time.time()
+    acc_length = 0
+
+    total_length = 0
+    for doc in arg[0]
+        total_length += len(doc[0])
 
     sub_Ds_table = np.zeros((len(S), len(arg[0])))
     for i, doc in enumerate(arg[0]):
@@ -110,8 +116,18 @@ def __DxS_worker__(thread_id, S, k, l, DxD, arg):
                 print(offset + f"worker {thread_id} at: {j}")
 
         doc_finished += 1
-        print(offset + f'Worker {thread_id} finished doc {doc[0]} in {time.time()-time_start:.2f}')
+        l = len(doc[1])
+        acc_length += l
+        print(offset + '-' * 50)
+        print(offset + f'Worker {thread_id} finished doc id {doc[0]} in {time.time()-time_start:.2f}s')
+        print(offest + f'Doc length was {l}')
         print(offset + f'Doc {doc_finished}/{len(arg[0])}')
+        print(offset + f'Time passed since start: {time.time()-t0:.2f}s')
+        speed = acc_length / time.time()-t0
+        arrival = total_length / speed
+        print(offset + f'Current speed: {speed} char/s')
+        print(offset + f'Expected arrival in: {arrival/60:.2f} minutes')
+        print(offset + '-' * 50)
     output.put((thread_id, sub_Ds_table))
 
 def __get_worker_args__(docs, S, k, l, nworkers):
