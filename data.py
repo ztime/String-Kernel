@@ -124,7 +124,7 @@ it creates it and saves it
 def load_all_entries():
     #Check if we have the pickle
     if os.path.isfile("%s/%s" % (SAVE_FOLDER, SAVE_ALL_ENTRIES_FILE)):
-        with open("%s/%s" % (SAVE_FOLDER, SAVE_ALL_ENTRIES_FILE), 'rb') as f:         
+        with open("%s/%s" % (SAVE_FOLDER, SAVE_ALL_ENTRIES_FILE), 'rb') as f:
             all_entries = pickle.load(f)
         return all_entries
     #We need to create it

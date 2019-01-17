@@ -146,7 +146,7 @@ def calculate_Gram_matrix_from_docs(documents, k, lam=0.5, normalized=True):
 		elif estimate > 60:
 			estimate /= 60
 			unit_time = "m"
-		print("Calculated [%d,%d] (Average: %d seconds, estimited time left:%d%s)" % (x,y,average_running, estimate, unit_time))
+		print("Calculated [%d,%d] (Time: %0.4f seconds, Average: %d seconds, estimited time left:%d%s)" % (x,y, elapsed_seconds, average_running, estimate, unit_time))
 	#store in pkl file
 	save_kernel(f'100_doc_gram_matrix', GRAM)
 
@@ -168,7 +168,7 @@ def load_kernel(filename):
 if __name__ == '__main__':
 
 	# load first 100 documents
-	docs = load_all_entries()[:1]
+	docs = load_all_entries()[:100]
 	lamb = 0.5
 	k = 3
 	calculate_Gram_matrix_from_docs(docs, k, lamb)
