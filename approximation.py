@@ -6,6 +6,7 @@ from data import load_all_entries, ReutersEntry, ALLOWED_CHARS, SAVE_FOLDER
 from ssk import normalized_ssk, ssk
 from enum import Enum
 import time
+import itertools
 import pickle
 from multiprocessing.dummy import Pool as ThreadPool
 
@@ -51,12 +52,25 @@ Takes a set S and a list of documents
 creates an approximation of a kernel using
 K(x,z) = sum [ For all s in S K(x,s) * K(z,s) ]
 '''
-def approximate_matrix(S, documents, k, l):
-    s_doc_table = compute_s_doc_table(S,documents,k,l)
-    path = "%s/%s%s" % (SAVE_FOLDER, FileEnum.K_3_100_FIRST_ALL_S,FileEnum.AFFIX)
-    f = open(path, 'wb')
-    pickle.dump(s_doc_table, f)
-    f.close()
+# def approximate_matrix(S, documents, k, l):
+def approximate_matrix():
+    # s_doc_table = compute_s_doc_table(S,documents,k,l)
+    s_doc_table = load_s_doc_table()
+    no_substrings, no_documents = s_doc_table.shape
+    gram_matrix = np.zeros((no_documents, no_documents))
+    for i,j in itertools.product(range(no_documents), range(no_documents)):
+        print("Calculating %d,%d" % (i,j))
+        summa = 0
+        for m in range(no_substrings):
+            summa += s_doc_table[m,i] * s_doc_table[m,j]
+        gram_matrix[i,j] = summa
+    return gram_matrix
+            
+
+    # path = "%s/%s%s" % (SAVE_FOLDER, FileEnum.K_3_100_FIRST_ALL_S,FileEnum.AFFIX)
+    # f = open(path, 'wb')
+    # pickle.dump(s_doc_table, f)
+    # f.close()
 
 def compute_s_doc_table(S,documents,k,l):
     # contains K(x,s) for all documents and substrings
@@ -131,14 +145,24 @@ def load_precalc_s_s():
         s_s = pickle.load(f)
     return s_s
 
+def load_s_doc_table():
+    f = open('pickels/s_doc_table_all_substrings_100_first_set_k_3_lambda_0_5.pkl', 'rb')
+    s_doc = pickle.load(f)
+    return s_doc
 
 if __name__ == '__main__':
     entries = load_all_entries()
-    all_bodies = [ (x.id, x.clean_body) for x in entries  ]
+    train_entries = [ (x.id, x.clean_body) for x in entries if x.lewis_split == 'TRAIN' ]
     substrings = create_all_substrings()
-    s_doc_table = compute_s_doc_table(substrings, all_bodies[:100], 3, 0.5)
-    f = open('pickels/s_doc_table_all_substrings_100_first_set_k_3_lambda_0_5.pkl', 'wb')
-    pickle.dump(s_doc_table, f)
+
+    gram_matrix = approximate_matrix()
+    f = open('pickels/gram_matrix_all_features_100_first_documents_k_3_lambda_0_5.pkl', 'wb')
+    pickle.dump(gram_matrix,f)
     f.close()
+
+    # s_doc_table = compute_s_doc_table(substrings, all_bodies[:100], 3, 0.5)
+    # f = open('pickels/s_doc_table_all_substrings_100_first_set_k_3_lambda_0_5.pkl', 'wb')
+    # pickle.dump(s_doc_table, f)
+    # f.close()
     # precalc_s_s(all_bodies, 3, 0.5)
 
