@@ -120,7 +120,7 @@ def __DxS_worker__(thread_id, S, k, l, DxD, arg):
         acc_length += l
         print(offset + '-' * 50)
         print(offset + f'Worker {thread_id} finished doc id {doc[0]} in {time.time()-time_start:.2f}s')
-        print(offest + f'Doc length was {l}')
+        print(offset + f'Doc length was {l}')
         print(offset + f'Doc {doc_finished}/{len(arg[0])}')
         print(offset + f'Time passed since start: {time.time()-t0:.2f}s')
         speed = acc_length / time.time()-t0
