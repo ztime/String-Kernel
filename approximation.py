@@ -346,8 +346,10 @@ if __name__ == '__main__':
     #train_entries = [ (x.id, x.clean_body) for x in entries if x.lewis_split == 'TRAIN' ]
     substrings = create_all_substrings()
 
-    SD_table = precompute_DxS_table(all_bodies, substrings, 3, 0.5, nworkers=7)
-    f = open('pickels/s_D_table_full_k_3_lambda_0_5.pkl', 'wb')
+    k = 3
+
+    SD_table = precompute_DxS_table(all_bodies, substrings, k, 0.5, nworkers=8)
+    f = open(f'pickels/s_D_table_full_k_{k}_lambda_0_5.pkl', 'wb')
     pickle.dump(SD_table, f)
     f.close()
     # precalc_s_s(all_bodies, 3, 0.5)
