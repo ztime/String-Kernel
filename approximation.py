@@ -92,24 +92,25 @@ def __DxS_worker__(thread_id, S, k, l, DxD, arg):
     average_total = 0.0
     average_running = 0.0
 
+    offset = '\t\t' * thread_id
+
+    doc_finished = 0
+
     sub_Ds_table = np.zeros((len(S), len(arg[0])))
     for i, doc in enumerate(arg[0]):
+        time_start = time.time()
         for j, K_ss in enumerate(arg[1]):
-            time_start = time.time()
 
             K_Ds = ssk(doc[1], S[j], k, l)
             sub_Ds_table[j, i] = K_Ds / np.sqrt(DxD[doc[0]] * K_ss)
 
-            time_end = time.time()
-            average_total += time_end - time_start
-            average_counter += 1.0
 
             if j % 500 == 0:
-                print('\t\t' * thread_id + f"worker {thread_id} at: {j}")
-        average_running = average_total / average_counter
-        print(f"Worker {thread_id} finished document {doc[0]}.")
-        print("Time: %d Average: %f s" % (time_end - time_start, average_running))
+                print(offset + f"worker {thread_id} at: {j}")
 
+        doc_finished += 1
+        print(offset + f'Worker {thread_id} finished doc {doc[0]} in {time.time()-time_start:.2f}')
+        print(offset + f'Doc {doc_finished}/{len(arg[0])}')
     output.put((thread_id, sub_Ds_table))
 
 def __get_worker_args__(docs, S, k, l, nworkers):
