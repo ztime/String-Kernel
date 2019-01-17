@@ -4,6 +4,7 @@ from sklearn.utils import shuffle
 from sklearn.svm import SVC
 from sklearn.metrics import f1_score, precision_score, recall_score
 import sys
+from data import ReutersEntry
 import data
 import numpy
 
@@ -24,9 +25,9 @@ def classify(kernel, labels):
     
     predictions = clf.predict(kernel)
 
-    f1 = f1_score(labels, predictions)
-    precision = precision_score(labels, predictions)
-    recall = recall_score(labels, predictions)
+    f1 = f1_score(labels, predictions, average=None)
+    precision = precision_score(labels, predictions, average=None)
+    recall = recall_score(labels, predictions, average=None)
     return f1,precision,recall
     
 
@@ -50,16 +51,17 @@ def get_labels_for_category(reuter_entries, target_categories):
 def get_labels(target_categories,num_docs):
     
     #Create train / test set
-	all_entries = data.load_all_entries()[0:num_docs]
+	all_entries = data.load_all_entries()
 	train_entries = [x for x in all_entries if x.lewis_split == "TRAIN"] 
 	test_entries = [x for x in all_entries if x.lewis_split == "TEST"] 
 
-	train_labels = get_labels_for_category(train_entries,target_categories)
-	test_labels = get_labels_for_category(test_entries,target_categories)
+	train_labels = get_labels_for_category(train_entries,target_categories)[0:num_docs]
+	test_labels = get_labels_for_category(test_entries,target_categories)[0:num_docs]
 	
 	return train_labels, test_labels 
 
     
+   
 if __name__ == '__main__':
     if len(sys.argv) != 2:
         print_usage()
@@ -68,22 +70,22 @@ if __name__ == '__main__':
     num_docs = 100
     
     if kernel_type == "ssk":
-        train_kernel = numpy.load("ssk_kernel_train.dat")
-        test_kernel = numpy.load("ssk_kernel_test.dat")
+        train_kernel = numpy.load("pickels/100_doc_gram_matrix")
+        test_kernel = numpy.load("pickels/<TEST_KERNEL_FILENAME>")
     elif kernel_type == "approx":
-        train_kernel = numpy.load("approx_kernel_train.dat")
-        test_kernel = numpy.load("approx_kernel_test.dat")
-    else:
-        print_usage()
-    
+        train_kernel = numpy.load("pickels/<TRAIN_APPROX>")
+        test_kernel = numpy.load("pickels/<TEST_APPROX>")
+        
     target_categories = ["earn","acquisition","crude","corn"]
-    
-    # TODO: which labels are being used from 100 we select (first 100, random??)
     train_labels, test_labels = get_labels(target_categories, num_docs)
-    
+
 	# Obtain SVM model
     clf = train(train_kernel, train_labels)		
-	
+         
 	# Do prediction on test data
     f1,precision,recall = classify(test_kernel, test_labels)
-			
+    
+    print("f1",f1)
+    print("Precision",precision)
+    print("Recall",recall)
+	

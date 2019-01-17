@@ -6,6 +6,7 @@ from data import load_all_entries, ReutersEntry, ALLOWED_CHARS, SAVE_FOLDER
 from ssk import normalized_ssk, ssk
 from enum import Enum
 import time
+from operator import itemgetter
 import itertools
 import pickle
 import multiprocessing as mp
@@ -36,15 +37,16 @@ def contiguos_from_entries(entries):
 
 def gram_similarity(K1, K2):
     #assuming that S is a mxm matrix
-    sum_k1_k1 = 0
-    sum_k2_k2 = 0
-    sum_k1_k2 = 0
-    m = len(S[0])
+    sum_k1_k1 = 0.0
+    sum_k2_k2 = 0.0
+    sum_k1_k2 = 0.0
+    m = K1.shape[0]
     for i in range(m):
+        print("i: %d" % m)
         for j in range(m):
-            sum_k1_k1 = K1[i][j] * K1[i][j]
-            sum_k1_k2 = K1[i][j] * K2[i][j]
-            sum_k2_k2 = K2[i][j] * K2[i][j]
+            sum_k1_k1 += K1[i][j] * K1[i][j]
+            sum_k1_k2 += K1[i][j] * K2[i][j]
+            sum_k2_k2 += K2[i][j] * K2[i][j]
     return sum_k1_k2 / math.sqrt(sum_k1_k1 * sum_k2_k2)
 
 '''
@@ -60,10 +62,14 @@ def approximate_matrix():
     gram_matrix = np.zeros((no_documents, no_documents))
     for i,j in itertools.product(range(no_documents), range(no_documents)):
         print("Calculating %d,%d" % (i,j))
-        summa = 0
+        summa_s_t = 0.0
+        summa_s_s = 0.0
+        summa_t_t = 0.0
         for m in range(no_substrings):
-            summa += s_doc_table[m,i] * s_doc_table[m,j]
-        gram_matrix[i,j] = summa
+            summa_s_t += s_doc_table[m,i] * s_doc_table[m,j]
+            summa_s_s += 2 * s_doc_table[m,i]
+            summa_t_t += 2 * s_doc_table[m,j]
+        gram_matrix[i,j] = summa_s_t / ( np.sqrt(summa_s_s * summa_t_t))
     return gram_matrix
 
 
@@ -212,17 +218,91 @@ def load_s_doc_table():
     s_doc = pickle.load(f)
     return s_doc
 
-if __name__ == '__main__':
-    entries = load_all_entries()[:10]
-    all_bodies = [(x.id, x.clean_body) for x in entries]
-    train_entries = [ (x.id, x.clean_body) for x in entries if x.lewis_split == 'TRAIN' ]
-    substrings = create_all_substrings()
+def load_pickle(filename):
+    f = open(filename, 'rb')
+    pick = pickle.load(f)
+    f.close()
+    return pick
 
+def get_n_grams_in_100_first_docs():
+    s_doc = load_s_doc_table()
+    summed = np.sum(s_doc, axis=1)
+    mapping = load_sub_string_index()
+    inv_mapping = {v: k for k, v in mapping.items()}
+    n_gram_count = 0
+    n_gram_indexes = []
+    for i in range(len(summed)):
+        if summed[i] > 1e-2:
+            n_gram_count += 1
+            n_gram_indexes.append((inv_mapping[i], summed[i]))
+    substrings = create_all_substrings()
+    top_sorted_n_grams = sorted(n_gram_indexes, key=itemgetter(1), reverse=True)
+    inv_sorted_n_grams = sorted(n_gram_indexes, key=itemgetter(1))
+
+    prefix_top_features = "gram_matrix_%d_top_features_100_first_documents_k_3_lambda_0_5_NORMALIZED.pkl"
+    prefix_inv_features = "gram_matrix_%d_inv_features_100_first_documents_k_3_lambda_0_5_NORMALIZED.pkl"
+    prefix_rnd_features = "gram_matrix_%d_rnd_features_100_first_documents_k_3_lambda_0_5_NORMALIZED.pkl"
+    grams = []
+    for index in n_gram_indexes:
+        grams.append(inv_mapping[index])
+
+    gram_matrix = approximate_matrix_from_subset(grams)
+    f = open('pickels/stuff', 'wb')
+    pickle.dump(gram_matrix,f)
+    f.close()
+
+
+def approximate_matrix_from_subset(subset):
+    # s_doc_table = compute_s_doc_table(S,documents,k,l)
+    s_doc_table = load_s_doc_table()
+    _ , no_documents = s_doc_table.shape
+    no_substrings = len(subset)
+    gram_matrix = np.zeros((no_documents, no_documents))
+    mapping = load_sub_string_index()
+    for i,j in itertools.product(range(no_documents), range(no_documents)):
+        print("Calculating %d,%d" % (i,j))
+        summa_s_t = 0.0
+        summa_s_s = 0.0
+        summa_t_t = 0.0
+        for ngram in subset:
+            invert_m = mapping[ngram]
+            summa_s_t += s_doc_table[invert_m,i] * s_doc_table[invert_m,j]
+            summa_s_s += 2 * s_doc_table[invert_m,i]
+            summa_t_t += 2 * s_doc_table[invert_m,j]
+        gram_matrix[i,j] = summa_s_t / ( np.sqrt(summa_s_s * summa_t_t))
+    return gram_matrix
+
+
+if __name__ == '__main__':
+    #get_n_grams_in_100_first_docs()
+    #Comparing gram matrices
+    # full_kernel = load_pickle("pickels/100_doc_gram_matrix")
+    # approx_kernel_all_features = load_pickle("pickels/gram_matrix_all_features_100_first_documents_k_3_lambda_0_5_NORMALIZED.pkl")
+    # approx_kernel_11005_features = load_pickle("pickels/gram_matrix_11005_top_features_100_first_documents_k_3_lambda_0_5_NORMALIZED.pkl")
+    # gram_si = gram_similarity(full_kernel, full_kernel)
+    # gram_sim = gram_similarity(full_kernel, approx_kernel_all_features)
+    # gram_sim2 = gram_similarity(full_kernel, approx_kernel_11005_features)
+    # print("Simmilarity full kernel vs full kernel: %f" % gram_si)
+    # print("Simmilarity full kernel vs all features: %f" % gram_sim)
+    # print("Simmilarity full kernel vs 11005 features: %f" % gram_sim2)
+    # entries = load_all_entries()
+    # train_entries = [ (x.id, x.clean_body) for x in entries if x.lewis_split == 'TRAIN' ]
+    # substrings = create_all_substrings()
+
+    # gram_matrix = approximate_matrix()
+    # f = open('pickels/gram_matrix_all_features_100_first_documents_k_3_lambda_0_5_NORMALIZED.pkl', 'wb')
+    # pickle.dump(gram_matrix,f)
+    # f.close()
 
     #gram_matrix = approximate_matrix()
     #f = open('pickels/gram_matrix_all_features_100_first_documents_k_3_lambda_0_5.pkl', 'wb')
     #pickle.dump(gram_matrix,f)
     #f.close()
+
+    entries = load_all_entries()[:10]
+    all_bodies = [(x.id, x.clean_body) for x in entries]
+    train_entries = [ (x.id, x.clean_body) for x in entries if x.lewis_split == 'TRAIN' ]
+    substrings = create_all_substrings()
 
     SD_table = precompute_DxS_table(all_bodies, substrings, 3, 0.5, nworkers=3)
     f = open('pickels/s_doc_table_all_substrings_100_first_set_k_3_lambda_0_5.pkl', 'wb')
