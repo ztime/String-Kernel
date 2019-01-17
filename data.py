@@ -42,6 +42,7 @@ class ReutersEntry:
         self.topics = []
         for topic in entry.topics.find_all('d'):
             self.topics.append(topic.get_text())
+        self.unfiltered_body = entry.text
         if entry.text is not None:
             self.clean_body = filter_body(entry.text)
         else:
