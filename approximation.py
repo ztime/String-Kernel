@@ -265,6 +265,12 @@ def load_pickle(filename):
     f.close()
     return pick
 
+def load_s_doc_table_top_3000(k):
+    with open(f'pickels/s_D_top_3000_k_{k}_lambda_0_5.pkl', 'rb') as f:
+        sD = pickle.load(f)
+    return sD
+
+
 def get_n_grams_in_100_first_docs():
     # s_doc = load_s_doc_table()
     # summed = np.sum(s_doc, axis=1)
