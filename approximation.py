@@ -2,7 +2,7 @@ import sys
 import numpy as np
 import math
 from operator import itemgetter
-from data import load_all_entries, ReutersEntry, ALLOWED_CHARS, SAVE_FOLDER, load_top_3000
+from data import load_all_entries, ReutersEntry, ALLOWED_CHARS, SAVE_FOLDER, load_top_3000, load_all_3grams
 from ssk import normalized_ssk, ssk
 from enum import Enum
 import random
@@ -11,6 +11,7 @@ from operator import itemgetter
 import itertools
 import pickle
 import multiprocessing as mp
+import copy
 
 class FileEnum(Enum):
     AFFIX = ".s_doc_table.pkl"
@@ -242,25 +243,28 @@ def load_pickle(filename):
     return pick
 
 def get_n_grams_in_100_first_docs():
-    s_doc = load_s_doc_table()
-    summed = np.sum(s_doc, axis=1)
-    mapping = load_sub_string_index()
-    inv_mapping = {v: k for k, v in mapping.items()}
-    n_gram_count = 0
-    n_gram_indexes = []
-    for i in range(len(summed)):
-        if summed[i] > 1e-2:
-            n_gram_count += 1
-            n_gram_indexes.append((inv_mapping[i], summed[i]))
-    substrings = create_all_substrings()
-    top_sorted_n_grams = sorted(n_gram_indexes, key=itemgetter(1), reverse=True)
-    top_sorted_only_n_gram = [ k[0] for k in top_sorted_n_grams ]
-    inv_sorted_n_grams = sorted(n_gram_indexes, key=itemgetter(1))
-    inv_sorted_only_n_gram = [ k[0] for k in inv_sorted_n_grams ]
+    # s_doc = load_s_doc_table()
+    # summed = np.sum(s_doc, axis=1)
+    # mapping = load_sub_string_index()
+    # inv_mapping = {v: k for k, v in mapping.items()}
+    # n_gram_count = 0
+    # n_gram_indexes = []
+    # for i in range(len(summed)):
+        # if summed[i] > 1e-2:
+            # n_gram_count += 1
+            # n_gram_indexes.append((inv_mapping[i], summed[i]))
+    # substrings = create_all_substrings()
+    # top_sorted_n_grams = sorted(n_gram_indexes, key=itemgetter(1), reverse=True)
+    # top_sorted_only_n_gram = [ k[0] for k in top_sorted_n_grams ]
+    # inv_sorted_n_grams = sorted(n_gram_indexes, key=itemgetter(1))
+    # inv_sorted_only_n_gram = [ k[0] for k in inv_sorted_n_grams ]
 
-    # prefix_top_features = "pickels/gram_matrix_%d_top_features_100_first_documents_k_3_lambda_0_5_NORMALIZED.pkl"
+    top_sorted_only_n_gram = load_all_3grams()
+    inv_sorted_only_n_gram = copy.copy(top_sorted_only_n_gram[::-1])
+
+    prefix_top_features = "pickels/approx_for_graph/gram_matrix_%d_top_features_100_first_documents_k_3_lambda_0_5_NORMALIZED.pkl"
     prefix_inv_features = "pickels/approx_for_graph/gram_matrix_%d_inv_features_100_first_documents_k_3_lambda_0_5_NORMALIZED.pkl"
-    # prefix_rnd_features = "pickels/gram_matrix_%d_rnd_features_100_first_documents_k_3_lambda_0_5_NORMALIZED.pkl"
+    prefix_rnd_features = "pickels/approx_for_graph/gram_matrix_%d_rnd_features_100_first_documents_k_3_lambda_0_5_NORMALIZED.pkl"
     grams = []
     feature_range = [ x for x in range(5, 200, 5) ]
     # feature_range_2 = [ x for x in range(200, 10200, 200) ]
@@ -270,22 +274,22 @@ def get_n_grams_in_100_first_docs():
     feature_range.extend(feature_range_3)
     feature_range.append(10000)
     for features in feature_range:
-        # print("Calculating for %d" % features)
-        # top_ssk = approximate_matrix_from_subset(top_sorted_only_n_gram[:features])
-        # top_ssk_name = prefix_top_features % features
-        # f = open(top_ssk_name, 'wb')
-        # pickle.dump(top_ssk,f)
-        # f.close()
+        print("Calculating for %d" % features)
+        top_ssk = approximate_matrix_from_subset(top_sorted_only_n_gram[:features])
+        top_ssk_name = prefix_top_features % features
+        f = open(top_ssk_name, 'wb')
+        pickle.dump(top_ssk,f)
+        f.close()
         inv_ssk = approximate_matrix_from_subset(inv_sorted_only_n_gram[:features])
         inv_ssk_name = prefix_inv_features % features
         f = open(inv_ssk_name, 'wb')
         pickle.dump(inv_ssk,f)
         f.close()
-        # rnd_ssk = approximate_matrix_from_subset(random.sample(top_sorted_only_n_gram, features))
-        # rnd_ssk_name = prefix_rnd_features % features
-        # f = open(rnd_ssk_name, 'wb')
-        # pickle.dump(rnd_ssk,f)
-        # f.close()
+        rnd_ssk = approximate_matrix_from_subset(random.sample(top_sorted_only_n_gram, features))
+        rnd_ssk_name = prefix_rnd_features % features
+        f = open(rnd_ssk_name, 'wb')
+        pickle.dump(rnd_ssk,f)
+        f.close()
 
     # gram_matrix = approximate_matrix_from_subset(grams)
     # f = open('pickels/stuff', 'wb')
@@ -315,7 +319,7 @@ def approximate_matrix_from_subset(subset):
 
 
 if __name__ == '__main__':
-    #get_n_grams_in_100_first_docs()
+    get_n_grams_in_100_first_docs()
     #Comparing gram matrices
     # full_kernel = load_pickle("pickels/100_doc_gram_matrix")
     # approx_kernel_all_features = load_pickle("pickels/gram_matrix_all_features_100_first_documents_k_3_lambda_0_5_NORMALIZED.pkl")
@@ -340,18 +344,18 @@ if __name__ == '__main__':
     #pickle.dump(gram_matrix,f)
     #f.close()
 
-    entries = load_all_entries()
-    all_bodies = [(x.id, x.clean_body) for x in entries]
+    # entries = load_all_entries()
+    # all_bodies = [(x.id, x.clean_body) for x in entries]
     #train_entries = [ (x.id, x.clean_body) for x in entries if x.lewis_split == 'TRAIN' ]
     #substrings = create_all_substrings()
 
 
 
 
-    k = 3
-    most_frequent_grams = load_top_3000(k)
-    SD_table = precompute_DxS_table(all_bodies, most_frequent_grams, k, 0.5, nworkers=8)
-    f = open(f'pickels/s_D_top_3000_k_{k}_lambda_0_5.pkl', 'wb')
-    pickle.dump(SD_table, f)
-    f.close()
+    # k = 3
+    # most_frequent_grams = load_top_3000(k)
+    # SD_table = precompute_DxS_table(all_bodies, most_frequent_grams, k, 0.5, nworkers=8)
+    # f = open(f'pickels/s_D_top_3000_k_{k}_lambda_0_5.pkl', 'wb')
+    # pickle.dump(SD_table, f)
+    # f.close()
     # precalc_s_s(all_bodies, 3, 0.5)

@@ -19,6 +19,8 @@ TOP_3000_K_3 = 'top_3000_sorted_k_3'
 TOP_3000_K_4 = 'top_3000_sorted_k_4'
 TOP_3000_K_5 = 'top_3000_sorted_k_5'
 
+ALL_3GRAM_K_3 = 'all_grams_sorted_k_3'
+
 #Stop words to filter out before doing anything to the data
 #taken from https://www.textfixer.com/tutorials/common-english-words.txt
 # NOTE: We have no idea if this is the same as used by original authors
@@ -130,9 +132,30 @@ def load_top_3000(k):
     f.close()
     return top_list
 
+def _save_all_3grams(all_data):
+    k = 3
+    counter_grams = dict()
+    for entry in [ x for x in all_data if x.lewis_split == 'TRAIN' ]:
+        for i in range(len(entry.clean_body) - k):
+            if entry.clean_body[i:i+k] not in counter_grams:
+                counter_grams[entry.clean_body[i:i+k]] = 0
+            counter_grams[entry.clean_body[i:i+k]] += 1
+    tuples_to_sort = [ (k,v) for k,v in counter_grams.items() ]
+    sorted_tuples = sorted(tuples_to_sort, key=itemgetter(1), reverse=True)
+    all_sorted = [ x[0] for x in sorted_tuples ] 
+    path = "%s/%s" % (SAVE_FOLDER, ALL_3GRAM_K_3)
+    f = open(path, 'wb')
+    pickle.dump(all_sorted, f)
+    f.close()
 
-    
-    
+def load_all_3grams():
+    path = "%s/%s" % (SAVE_FOLDER, ALL_3GRAM_K_3)
+    f = open(path, 'rb')
+    top = pickle.load(f)
+    f.close()
+    return top
+
+
 '''
 Reads a file an returns an BeautifulSoup object
 '''
@@ -208,13 +231,17 @@ if __name__ == '__main__':
     all_entries = load_all_entries()
     # for e in all_entries[0:20]:
         # print(e)
+    # _save_all_3grams(all_entries)
+    top = load_all_3grams()
+    print(top[:50])
+    print(len(top))
     # _create_top_3000_ngrams(3, all_entries)
     # _create_top_3000_ngrams(4, all_entries)
     # _create_top_3000_ngrams(5, all_entries)
-    top_k_3 = load_top_3000(3)
-    print(top_k_3[:50])
-    top_k_4 = load_top_3000(4)
-    print(top_k_4[:50])
-    top_k_5 = load_top_3000(5)
-    print(top_k_5[:50])
+    # top_k_3 = load_top_3000(3)
+    # print(top_k_3[:50])
+    # top_k_4 = load_top_3000(4)
+    # print(top_k_4[:50])
+    # top_k_5 = load_top_3000(5)
+    # print(top_k_5[:50])
 
