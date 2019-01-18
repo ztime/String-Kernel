@@ -275,8 +275,8 @@ def get_n_grams_in_100_first_docs():
     feature_range.append(10000)
     for features in feature_range:
         print("Calculating for %d" % features)
-        top_ssk = approximate_matrix_from_subset(top_sorted_only_n_gram[:features])
         top_ssk_name = prefix_top_features % features
+        top_ssk = approximate_matrix_from_subset(top_sorted_only_n_gram[:features])
         f = open(top_ssk_name, 'wb')
         pickle.dump(top_ssk,f)
         f.close()
