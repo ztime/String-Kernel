@@ -81,20 +81,35 @@ def approximate_matrix():
     # f.close()
 
 
-output = mp.Queue()
-def __DxS_worker__(thread_id, S, k, l, DxD, arg):
+def __get_shared_matrix__(shape):
+    # shared memory space
+    X = mp.RawArray('d', shape[0] * shape[1])
+    # wrap numpy
+    #X_np = np.frombuffer(X, dtype=np.float64).reshape(shape)
+    X_np = np.frombuffer(X).reshape(shape)
+    #np.copyto(X_np, np.zeros((shape)))
+    return X, shape
+
+
+#output = mp.Queue()
+def __DxS_worker__(S, k, l, DxD, arg):
     ''' arg[0]: doc_bucket  '''
     ''' arg[1]: K_ss        '''
     ''' arg[2]: start index '''
     ''' arg[3]: end index   '''
 
+    thread_id = mp.current_process()._identity[0]
+
     print(f'Thread {thread_id} staring!')
+
+    # shared data structure
+    Ds_table = np.frombuffer(__X).reshape(__shape)
 
     average_counter = 0.0
     average_total = 0.0
     average_running = 0.0
 
-    offset = '\t\t' * thread_id
+    offset = '\t\t' * (thread_id - 1)
 
     doc_finished = 0
     t0 = time.time()
@@ -105,12 +120,12 @@ def __DxS_worker__(thread_id, S, k, l, DxD, arg):
     for doc in arg[0]:
         total_length += len(doc[1])
 
-    sub_Ds_table = np.zeros((len(S), len(arg[0])))
+    #sub_Ds_table = np.zeros((len(S), len(arg[0])))
     for i, doc in enumerate(arg[0]):
         time_start = time.time()
         for j, K_ss in enumerate(arg[1]):
             K_Ds = ssk(doc[1], S[j], k, l)
-            sub_Ds_table[j, i] = K_Ds / np.sqrt(DxD[doc[0]] * K_ss)
+            Ds_table[j, i+arg[2]] = K_Ds / np.sqrt(DxD[doc[0]] * K_ss)
 
             if j % 500 == 0:
                 print(offset + f"worker {thread_id} at: {j}")
@@ -128,7 +143,8 @@ def __DxS_worker__(thread_id, S, k, l, DxD, arg):
         print(offset + f'Current speed: {speed} char/s')
         print(offset + f'Expected arrival in: {arrival/60/60:.2f} h')
         print(offset + '-' * 50)
-    output.put((thread_id, sub_Ds_table))
+    print('~' * 16 * thread_id + f'Worker {thread_id+1} done!')
+    #output.put((thread_id, sub_Ds_table))
 
 def __get_worker_args__(docs, S, k, l, nworkers):
 
@@ -170,24 +186,31 @@ def __get_worker_args__(docs, S, k, l, nworkers):
     assert acc_size == doc_total_length
     return args
 
+def __init_worker__(X, shape):
+    global __X
+    global __shape
+    __X = X
+    __shape = shape
+
 def precompute_DxS_table(documents, S, k, l, nworkers=3):
 
     #DxS_table = np.zeros((len(S), len(documents)))
     args = __get_worker_args__(documents, S, k, l, nworkers)
     DxD = load_precalc_DxD(k)
 
+    # repack args for new implementation
+    new_args = []
+    for arg in args:
+        new_args.append((S, k, l, DxD, arg))
 
-    processes = [mp.Process(target=__DxS_worker__, args=(i, S, k, l, DxD, arg)) for i, arg in enumerate(args)]
-    for p in processes: p.start()
-    for p in processes: p.join()
-    results = sorted([output.get() for p in processes])
+    Ds_table, shape = __get_shared_matrix__((len(S), len(documents)))
 
-    Ds_table = np.zeros((len(S), len(documents)))
-    for idx, arg in enumerate(args):
-        print('table', Ds_table[:, arg[2]:arg[3]+1].shape)
-        print('res  ', results[idx][1].shape)
-        Ds_table[:, arg[2]:arg[3]+1] = results[idx][1]
-    return SD_table
+    t0 = time.time()
+    with mp.Pool(processes=nworkers, initializer=__init_worker__, initargs=(Ds_table, shape)) as pool:
+        pool.starmap(__DxS_worker__, new_args)
+
+    print(f'Done! calculations done in {(time.time()-t0)/60/60}m!')
+    return np.frombuffer(Ds_table).reshape(shape)
 
 
 
@@ -319,7 +342,7 @@ def approximate_matrix_from_subset(subset):
 
 
 if __name__ == '__main__':
-    get_n_grams_in_100_first_docs()
+    #get_n_grams_in_100_first_docs()
     #Comparing gram matrices
     # full_kernel = load_pickle("pickels/100_doc_gram_matrix")
     # approx_kernel_all_features = load_pickle("pickels/gram_matrix_all_features_100_first_documents_k_3_lambda_0_5_NORMALIZED.pkl")
@@ -344,18 +367,19 @@ if __name__ == '__main__':
     #pickle.dump(gram_matrix,f)
     #f.close()
 
-    # entries = load_all_entries()
-    # all_bodies = [(x.id, x.clean_body) for x in entries]
+    entries = load_all_entries()
+    all_bodies = [(x.id, x.clean_body) for x in entries]
     #train_entries = [ (x.id, x.clean_body) for x in entries if x.lewis_split == 'TRAIN' ]
     #substrings = create_all_substrings()
 
 
 
 
-    # k = 3
-    # most_frequent_grams = load_top_3000(k)
-    # SD_table = precompute_DxS_table(all_bodies, most_frequent_grams, k, 0.5, nworkers=8)
-    # f = open(f'pickels/s_D_top_3000_k_{k}_lambda_0_5.pkl', 'wb')
-    # pickle.dump(SD_table, f)
-    # f.close()
-    # precalc_s_s(all_bodies, 3, 0.5)
+    k = 3
+    most_frequent_grams = load_top_3000(k)
+    SD_table = precompute_DxS_table(all_bodies, most_frequent_grams, k, 0.5, nworkers=7)
+    #SD_table = precompute_DxS_table(all_bodies[100:1000], most_frequent_grams[100:200], k, 0.5, nworkers=7)
+    f = open(f'pickels/s_D_top_3000_k_{k}_lambda_0_5.pkl', 'wb')
+    pickle.dump(SD_table, f)
+    f.close()
+    precalc_s_s(all_bodies, 3, 0.5)
