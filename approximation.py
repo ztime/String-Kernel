@@ -377,7 +377,7 @@ if __name__ == '__main__':
 
     k = 3
     most_frequent_grams = load_top_3000(k)
-    SD_table = precompute_DxS_table(all_bodies, most_frequent_grams, k, 0.5, nworkers=7)
+    SD_table = precompute_DxS_table(all_bodies, most_frequent_grams, k, 0.5, nworkers=8)
     #SD_table = precompute_DxS_table(all_bodies[100:1000], most_frequent_grams[100:200], k, 0.5, nworkers=7)
     f = open(f'pickels/s_D_top_3000_k_{k}_lambda_0_5.pkl', 'wb')
     pickle.dump(SD_table, f)
