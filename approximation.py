@@ -2,7 +2,7 @@ import sys
 import numpy as np
 import math
 from operator import itemgetter
-from data import load_all_entries, ReutersEntry, ALLOWED_CHARS, SAVE_FOLDER
+from data import load_all_entries, ReutersEntry, ALLOWED_CHARS, SAVE_FOLDER, load_top_3000
 from ssk import normalized_ssk, ssk
 from enum import Enum
 import random
