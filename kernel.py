@@ -34,12 +34,10 @@ def __construct_kernel(top, k, type='TRAIN'):
 
 
 def __load_kernels(top, k):
-    train_kernel = None
-    test_kernel = None
     if os.path.isfile(f'{APPROX_KERNEL_PATH}TRAIN_KERNEL_k_{k}_top_{top}.pkl'):
         print('Training kernel and labels loaded.')
         with open(f'{APPROX_KERNEL_PATH}TRAIN_KERNEL_k_{k}_top_{top}.pkl', 'rb') as f:
-            train_kernel.append(pickle.load(f))
+            train_kernel = pickle.load(f)
     else:
         train_kernel = __construct_kernel(top, k)
         f = open(f'{APPROX_KERNEL_PATH}TRAIN_KERNEL_k_{k}_top_{top}.pkl', 'wb')
@@ -49,7 +47,7 @@ def __load_kernels(top, k):
     if os.path.isfile(f'{APPROX_KERNEL_PATH}TEST_KERNEL_k_{k}_top_{top}.pkl'):
         print('Testing kernel loaded.')
         with open(f'{APPROX_KERNEL_PATH}TEST_KERNEL_k_{k}_top_{top}.pkl', 'rb') as f:
-            test_kernel.append(pickle.load(f))
+            test_kernel = pickle.load(f)
     else:
         test_kernel = __construct_kernel(top, k, type='TEST')
         f = open(f'{APPROX_KERNEL_PATH}TEST_KERNEL_k_{k}_top_{top}.pkl', 'wb')
