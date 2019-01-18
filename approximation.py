@@ -100,28 +100,28 @@ def __DxS_worker__(thread_id, S, k, l, DxD, arg):
     acc_length = 0
 
     total_length = 0
+    n_docs = len(arg[0])
     for doc in arg[0]:
         total_length += len(doc[1])
 
     sub_Ds_table = np.zeros((len(S), len(arg[0])))
     for i, doc in enumerate(arg[0]):
         time_start = time.time()
+        print(S[0])
         for j, K_ss in enumerate(arg[1]):
-
             K_Ds = ssk(doc[1], S[j], k, l)
             sub_Ds_table[j, i] = K_Ds / np.sqrt(DxD[doc[0]] * K_ss)
-
 
             if j % 500 == 0:
                 print(offset + f"worker {thread_id} at: {j}")
 
         doc_finished += 1
-        l = len(doc[1])
-        acc_length += l
+        length = len(doc[1])
+        acc_length += length
         print(offset + '-' * 50)
         print(offset + f'Worker {thread_id} finished doc id {doc[0]} in {time.time()-time_start:.2f}s')
-        print(offset + f'Doc length was {l}')
-        print(offset + f'Doc {doc_finished}/{len(arg[0])}')
+        print(offset + f'Doc length was {length}')
+        print(offset + f'Doc {doc_finished}/{n_docs}')
         print(offset + f'Time passed since start: {time.time()-t0:.2f}s')
         speed = acc_length / (time.time()-t0)
         arrival = total_length / speed
@@ -346,8 +346,8 @@ if __name__ == '__main__':
     #train_entries = [ (x.id, x.clean_body) for x in entries if x.lewis_split == 'TRAIN' ]
     substrings = create_all_substrings()
 
-    k = 3
 
+    k = 3
     SD_table = precompute_DxS_table(all_bodies, substrings, k, 0.5, nworkers=8)
     f = open(f'pickels/s_D_table_full_k_{k}_lambda_0_5.pkl', 'wb')
     pickle.dump(SD_table, f)
