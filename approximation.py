@@ -107,7 +107,6 @@ def __DxS_worker__(thread_id, S, k, l, DxD, arg):
     sub_Ds_table = np.zeros((len(S), len(arg[0])))
     for i, doc in enumerate(arg[0]):
         time_start = time.time()
-        print(S[0])
         for j, K_ss in enumerate(arg[1]):
             K_Ds = ssk(doc[1], S[j], k, l)
             sub_Ds_table[j, i] = K_Ds / np.sqrt(DxD[doc[0]] * K_ss)
@@ -124,7 +123,7 @@ def __DxS_worker__(thread_id, S, k, l, DxD, arg):
         print(offset + f'Doc {doc_finished}/{n_docs}')
         print(offset + f'Time passed since start: {time.time()-t0:.2f}s')
         speed = acc_length / (time.time()-t0)
-        arrival = total_length / speed
+        arrival = (total_length-acc_length) / speed
         print(offset + f'Current speed: {speed} char/s')
         print(offset + f'Expected arrival in: {arrival/60/60:.2f} h')
         print(offset + '-' * 50)
