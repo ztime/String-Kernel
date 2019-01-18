@@ -343,12 +343,15 @@ if __name__ == '__main__':
     entries = load_all_entries()
     all_bodies = [(x.id, x.clean_body) for x in entries]
     #train_entries = [ (x.id, x.clean_body) for x in entries if x.lewis_split == 'TRAIN' ]
-    substrings = create_all_substrings()
+    #substrings = create_all_substrings()
+
+
 
 
     k = 3
-    SD_table = precompute_DxS_table(all_bodies, substrings, k, 0.5, nworkers=8)
-    f = open(f'pickels/s_D_table_full_k_{k}_lambda_0_5.pkl', 'wb')
+    most_frequent_grams = load_top_3000(k)
+    SD_table = precompute_DxS_table(all_bodies, most_frequent_grams, k, 0.5, nworkers=8)
+    f = open(f'pickels/s_D_top_3000_k_{k}_lambda_0_5.pkl', 'wb')
     pickle.dump(SD_table, f)
     f.close()
     # precalc_s_s(all_bodies, 3, 0.5)
