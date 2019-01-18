@@ -93,24 +93,41 @@ def __DxS_worker__(thread_id, S, k, l, DxD, arg):
     average_total = 0.0
     average_running = 0.0
 
+    offset = '\t\t' * thread_id
+
+    doc_finished = 0
+    t0 = time.time()
+    acc_length = 0
+
+    total_length = 0
+    for doc in arg[0]:
+        total_length += len(doc[1])
+
     sub_Ds_table = np.zeros((len(S), len(arg[0])))
     for i, doc in enumerate(arg[0]):
+        time_start = time.time()
         for j, K_ss in enumerate(arg[1]):
-            time_start = time.time()
 
             K_Ds = ssk(doc[1], S[j], k, l)
             sub_Ds_table[j, i] = K_Ds / np.sqrt(DxD[doc[0]] * K_ss)
 
-            time_end = time.time()
-            average_total += time_end - time_start
-            average_counter += 1.0
 
             if j % 500 == 0:
-                print('\t\t' * thread_id + f"worker {thread_id} at: {j}")
-        average_running = average_total / average_counter
-        print(f"Worker {thread_id} finished document {doc[0]}.")
-        print("Time: %d Average: %f s" % (time_end - time_start, average_running))
+                print(offset + f"worker {thread_id} at: {j}")
 
+        doc_finished += 1
+        l = len(doc[1])
+        acc_length += l
+        print(offset + '-' * 50)
+        print(offset + f'Worker {thread_id} finished doc id {doc[0]} in {time.time()-time_start:.2f}s')
+        print(offset + f'Doc length was {l}')
+        print(offset + f'Doc {doc_finished}/{len(arg[0])}')
+        print(offset + f'Time passed since start: {time.time()-t0:.2f}s')
+        speed = acc_length / (time.time()-t0)
+        arrival = total_length / speed
+        print(offset + f'Current speed: {speed} char/s')
+        print(offset + f'Expected arrival in: {arrival/60/60:.2f} h')
+        print(offset + '-' * 50)
     output.put((thread_id, sub_Ds_table))
 
 def __get_worker_args__(docs, S, k, l, nworkers):
@@ -241,7 +258,7 @@ def get_n_grams_in_100_first_docs():
     top_sorted_only_n_gram = [ k[0] for k in top_sorted_n_grams ]
     inv_sorted_n_grams = sorted(n_gram_indexes, key=itemgetter(1))
     inv_sorted_only_n_gram = [ k[0] for k in inv_sorted_n_grams ]
-    
+
     # prefix_top_features = "pickels/gram_matrix_%d_top_features_100_first_documents_k_3_lambda_0_5_NORMALIZED.pkl"
     prefix_inv_features = "pickels/approx_for_graph/gram_matrix_%d_inv_features_100_first_documents_k_3_lambda_0_5_NORMALIZED.pkl"
     # prefix_rnd_features = "pickels/gram_matrix_%d_rnd_features_100_first_documents_k_3_lambda_0_5_NORMALIZED.pkl"
@@ -275,7 +292,7 @@ def get_n_grams_in_100_first_docs():
     # f = open('pickels/stuff', 'wb')
     # pickle.dump(gram_matrix,f)
     # f.close()
-    
+
 
 def approximate_matrix_from_subset(subset):
     # s_doc_table = compute_s_doc_table(S,documents,k,l)
@@ -285,7 +302,7 @@ def approximate_matrix_from_subset(subset):
     gram_matrix = np.zeros((no_documents, no_documents))
     mapping = load_sub_string_index()
     for i,j in itertools.product(range(no_documents), range(no_documents)):
-        # print("Calculating %d,%d" % 
+        # print("Calculating %d,%d" %
         summa_s_t = 0.0
         summa_s_s = 0.0
         summa_t_t = 0.0
@@ -329,8 +346,10 @@ if __name__ == '__main__':
     #train_entries = [ (x.id, x.clean_body) for x in entries if x.lewis_split == 'TRAIN' ]
     substrings = create_all_substrings()
 
-    SD_table = precompute_DxS_table(all_bodies, substrings, 3, 0.5, nworkers=7)
-    f = open('pickels/s_D_table_full_k_3_lambda_0_5.pkl', 'wb')
+    k = 3
+
+    SD_table = precompute_DxS_table(all_bodies, substrings, k, 0.5, nworkers=8)
+    f = open(f'pickels/s_D_table_full_k_{k}_lambda_0_5.pkl', 'wb')
     pickle.dump(SD_table, f)
     f.close()
     # precalc_s_s(all_bodies, 3, 0.5)
