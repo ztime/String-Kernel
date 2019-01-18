@@ -21,6 +21,9 @@ TOP_3000_K_5 = 'top_3000_sorted_k_5'
 
 ALL_3GRAM_K_3 = 'all_grams_sorted_k_3'
 
+MAP_DOC_ID_TO_I = 'mapping_doc_id_to_index.pkl'
+MAP_I_TO_DOC_ID = 'mapping_index_to_doc_id.pkl'
+
 #Stop words to filter out before doing anything to the data
 #taken from https://www.textfixer.com/tutorials/common-english-words.txt
 # NOTE: We have no idea if this is the same as used by original authors
@@ -155,6 +158,35 @@ def load_all_3grams():
     f.close()
     return top
 
+def _save_mapping_docs_index_id():
+    all_entries = load_all_entries()
+    ids_list = [ x.id for x in all_entries ]
+    map_doc_id_to_index = dict()
+    for i in range(len(ids_list)):
+        map_doc_id_to_index[ids_list[i]] = i
+    map_index_to_doc_id = { v:k for k,v in map_doc_id_to_index.items() }
+    path = "%s/%s" % (SAVE_FOLDER, MAP_DOC_ID_TO_I)
+    f = open(path, 'wb')
+    pickle.dump(map_doc_id_to_index, f)
+    f.close()
+    path = "%s/%s" % (SAVE_FOLDER, MAP_I_TO_DOC_ID)
+    f = open(path, 'wb')
+    pickle.dump(map_index_to_doc_id, f)
+    f.close()
+
+def load_map_doc_id_to_index():
+    path = "%s/%s" % (SAVE_FOLDER, MAP_DOC_ID_TO_I)
+    f = open(path, 'rb')
+    mapping = pickle.load(f)
+    f.close()
+    return mapping
+
+def load_map_index_to_doc_id():
+    path = "%s/%s" % (SAVE_FOLDER, MAP_I_TO_DOC_ID)
+    f = open(path, 'rb')
+    mapping = pickle.load(f)
+    f.close()
+    return mapping
 
 '''
 Reads a file an returns an BeautifulSoup object
@@ -229,12 +261,17 @@ def load_all_entries():
 #NOTE: For debugging purposes
 if __name__ == '__main__':
     all_entries = load_all_entries()
+    # _save_mapping_docs_index_id()
+    map_id_to_i = load_map_doc_id_to_index()
+    map_i_to_id = load_map_index_to_doc_id()
+    print(map_i_to_id)
+    
     # for e in all_entries[0:20]:
         # print(e)
     # _save_all_3grams(all_entries)
-    top = load_all_3grams()
-    print(top[:50])
-    print(len(top))
+    # top = load_all_3grams()
+    # print(top[:50])
+    # print(len(top))
     # _create_top_3000_ngrams(3, all_entries)
     # _create_top_3000_ngrams(4, all_entries)
     # _create_top_3000_ngrams(5, all_entries)
