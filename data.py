@@ -4,6 +4,7 @@ import os
 import pickle
 #from bs4 import BeautifulSoup
 from pprint import pprint
+from operator import itemgetter
 
 DATA_FOLDER = 'reuters-dataset'
 # All data files are named reut2-0[0-21].sgm
@@ -13,6 +14,10 @@ DATA_NO_OF_FILES = 22
 #Path for saving data
 SAVE_FOLDER = 'pickels'
 SAVE_ALL_ENTRIES_FILE = 'all_parsed_entries.pkl'
+
+TOP_3000_K_3 = 'top_3000_sorted_k_3'
+TOP_3000_K_4 = 'top_3000_sorted_k_4'
+TOP_3000_K_5 = 'top_3000_sorted_k_5'
 
 #Stop words to filter out before doing anything to the data
 #taken from https://www.textfixer.com/tutorials/common-english-words.txt
@@ -74,6 +79,60 @@ class ReutersEntry:
                 self.stride_3_grams[self.clean_body[i:i+3]] = 0
             self.stride_3_grams[self.clean_body[i:i+3]] += 1
 
+'''
+Extract the top 3000 ngrams with continous grams
+for the first 100 files of what is being passed
+and saves the mapping
+'''
+def _create_top_3000_ngrams(k, all_data):
+    counter_grams = dict()
+    for entry in [ x for x in all_data if x.lewis_split == 'TRAIN' ]:
+        for i in range(len(entry.clean_body) - k):
+            if entry.clean_body[i:i+k] not in counter_grams:
+                counter_grams[entry.clean_body[i:i+k]] = 0
+            counter_grams[entry.clean_body[i:i+k]] += 1
+    tuples_to_sort = [ (k,v) for k,v in counter_grams.items() ]
+    sorted_tuples = sorted(tuples_to_sort, key=itemgetter(1), reverse=True)
+    # Extract top 3000 and create a mapping
+    top_list = [ x[0] for x in sorted_tuples[:3000] ]
+    #save it
+    path = None
+    if k == 3:
+        path = TOP_3000_K_3
+    elif k == 4:
+        path = TOP_3000_K_4
+    elif k == 5:
+        path = TOP_3000_K_5
+    else:
+        print("INVALID K IN DATA")
+        quit()
+    path = "%s/%s.pkl" % (SAVE_FOLDER, path)
+    f = open(path, 'wb')
+    pickle.dump(top_list, f)
+    f.close()
+    print("Saved for k = %d" % k)
+
+
+def load_top_3000(k):
+    path = None
+    if k == 3:
+        path = TOP_3000_K_3
+    elif k == 4:
+        path = TOP_3000_K_4
+    elif k == 5:
+        path = TOP_3000_K_5
+    else:
+        print("INVALID K IN DATA")
+        quit()
+    path = "%s/%s.pkl" % (SAVE_FOLDER, path)
+    f = open(path, 'rb')
+    top_list = pickle.load(f)
+    f.close()
+    return top_list
+
+
+    
+    
 '''
 Reads a file an returns an BeautifulSoup object
 '''
@@ -147,5 +206,15 @@ def load_all_entries():
 #NOTE: For debugging purposes
 if __name__ == '__main__':
     all_entries = load_all_entries()
-    for e in all_entries[0:20]:
-        print(e)
+    # for e in all_entries[0:20]:
+        # print(e)
+    # _create_top_3000_ngrams(3, all_entries)
+    # _create_top_3000_ngrams(4, all_entries)
+    # _create_top_3000_ngrams(5, all_entries)
+    top_k_3 = load_top_3000(3)
+    print(top_k_3[:50])
+    top_k_4 = load_top_3000(4)
+    print(top_k_4[:50])
+    top_k_5 = load_top_3000(5)
+    print(top_k_5[:50])
+
