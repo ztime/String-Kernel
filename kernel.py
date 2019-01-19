@@ -11,10 +11,10 @@ def __finalize(X):
     n = X.shape[1]
     G = np.zeros((n,n))
     for i in range(n):
-        for j in range(n):
-            if j > i:
-                continue
-            G[i,j] = X[i,:] @ X[j,:].T
+        for j in range(i, n):
+            K = X[i,:] @ X[j,:].T
+            G[i,j] = K
+            G[j,i] = K
     return G
 
 def __construct_kernel(top, k, type='TRAIN'):
