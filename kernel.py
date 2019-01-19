@@ -9,17 +9,36 @@ PICKLES_PATH = './pickels/'
 APPROX_KERNEL_PATH = './pickels/approx_kernels/'
 
 
-def __finalize(X):
+def __finalize(X, Y=None):
+
+    print(f'X shape: {X.shape}')
+
+
+    if isinstance(Y, np.ndarray):
+        print(f'Y shape: {Y.shape}')
+        asym = True
+    else:
+        Y = X
+        print(f'Y shape: {Y.shape}')
+        asym = False
+
     n = X.shape[1]
-    G = np.zeros((n,n))
+    G = np.zeros((n,n)) if not asym else np.zeros((n, Y.shape[1]))
+    print(f'Kernel have shape {G.shape}')
+    t0 = time.time()
     for i in range(n):
-        t0 = time.time()
-        for j in range(i, n):
-            K = X[:,i] @ X[:,j].T
-            G[i,j] = K
-            G[j,i] = K
-        print(f'at {i}/{n}. time:{(time.time()-t0)}s')
-    return G
+        for j in range(i, n) if not asym else range(Y.shape[1]):
+            K = X[:,i] @ Y[:,j].T
+            if asym:
+                G[i,j] = K
+            else:
+                G[j,i] = K
+                G[i,j] = K
+        if i % 500 == 0:
+            print(f'at {i}/{n}. time:{time.time()-t0:.2f}s')
+
+    return G.T
+
 
 def __construct_kernel(top, k, _type='TRAIN'):
     print(f'Constructing approximation kernel, k={k}, top={top}.')
@@ -29,15 +48,29 @@ def __construct_kernel(top, k, _type='TRAIN'):
 
     # load all documents and find all included id's
     entries = load_all_entries()
-    indices = [ mapping[x.id] for x in entries if x.lewis_split == _type ]
+    train_indices = [ mapping[x.id] for x in entries if x.lewis_split == 'TRAIN' ]
+    X = load_s_doc_table_top_3000(k)[:top, train_indices]
 
-    # Load precomputed top 3000 s x all docs
-    sD_table = load_s_doc_table_top_3000(k)[:top, indices]
-    return __finalize(sD_table)
+    if _type == 'TEST':
+        test_indices = [ mapping[x.id] for x in entries if x.lewis_split == _type ]
+        Y = load_s_doc_table_top_3000(k)[:top, test_indices]
+        return __finalize(X, Y)
+    else:
+        return __finalize(X)
 
 
 
 def __load_kernels(top, k):
+    if os.path.isfile(f'{APPROX_KERNEL_PATH}TEST_KERNEL_k_{k}_top_{top}.pkl'):
+        print('Testing kernel loaded.')
+        with open(f'{APPROX_KERNEL_PATH}TEST_KERNEL_k_{k}_top_{top}.pkl', 'rb') as f:
+            test_kernel = pickle.load(f)
+    else:
+        test_kernel = __construct_kernel(top, k, _type='TEST')
+        f = open(f'{APPROX_KERNEL_PATH}TEST_KERNEL_k_{k}_top_{top}.pkl', 'wb')
+        pickle.dump(test_kernel, f)
+        f.close()
+
     if os.path.isfile(f'{APPROX_KERNEL_PATH}TRAIN_KERNEL_k_{k}_top_{top}.pkl'):
         print('Training kernel and labels loaded.')
         with open(f'{APPROX_KERNEL_PATH}TRAIN_KERNEL_k_{k}_top_{top}.pkl', 'rb') as f:
@@ -48,15 +81,7 @@ def __load_kernels(top, k):
         pickle.dump(train_kernel, f)
         f.close()
 
-    if os.path.isfile(f'{APPROX_KERNEL_PATH}TEST_KERNEL_k_{k}_top_{top}.pkl'):
-        print('Testing kernel loaded.')
-        with open(f'{APPROX_KERNEL_PATH}TEST_KERNEL_k_{k}_top_{top}.pkl', 'rb') as f:
-            test_kernel = pickle.load(f)
-    else:
-        test_kernel = __construct_kernel(top, k, _type='TEST')
-        f = open(f'{APPROX_KERNEL_PATH}TEST_KERNEL_k_{k}_top_{top}.pkl', 'wb')
-        pickle.dump(test_kernel, f)
-        f.close()
+
     return train_kernel, test_kernel
 
 

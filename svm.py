@@ -42,7 +42,7 @@ if __name__ == '__main__':
     clf.fit(train_kernel, train_labels)
 
     # test model
-    prediction = clf.predict(test_kernel, test_labels)
+    prediction = clf.predict(test_kernel)
 
     # evaluate results
     print(f'Results from approximation kernel (k={k}, top {top}, topic {topic})')
