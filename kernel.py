@@ -29,7 +29,7 @@ def __construct_kernel(top, k, type='TRAIN'):
 
     # Load precomputed top 3000 s x all docs
     sD_table = np.take(load_s_doc_table_top_3000(k)[:top], indices)
-    return __finalize(X)
+    return __finalize(sD_table)
 
 
 
