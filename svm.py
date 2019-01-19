@@ -6,19 +6,21 @@ from sklearn.metrics import f1_score, precision_score, recall_score
 import sys
 import numpy
 from kernel import get_kernels_and_labels_top
+from data import ReutersEntry
 
 def print_usage():
-	print('usage: python svm.py <k> <top> <topic>')
-    print('       where k any in {3, 4, 5}')
-    print('       and S is either 1000 or 3000')
+	print('usage: python svm.py <k> <top> <topic>\n' +
+          '       where k any in {3, 4, 5}\n' +
+          '       and S is either 1000 or 3000')
 
 
 if __name__ == '__main__':
     if len(sys.argv) != 4:
         print_usage()
+        sys.exit()
 
-    k = sys.argv[1]
-    top = sys.argv[2]
+    k = int(sys.argv[1])
+    top = int(sys.argv[2])
     topic = sys.argv[3]
 
     if k not in [3,4,5] or top not in [1000, 3000]:
@@ -40,7 +42,7 @@ if __name__ == '__main__':
     clf.fit(train_kernel, train_labels)
 
     # test model
-    prediction = clf.predict(test_kernel)
+    prediction = clf.predict(test_kernel, test_labels)
 
     # evaluate results
     print(f'Results from approximation kernel (k={k}, top {top}, topic {topic})')

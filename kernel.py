@@ -3,6 +3,7 @@ from approximation import load_s_doc_table_top_3000
 from data import load_map_doc_id_to_index, load_all_entries, ReutersEntry
 import os
 import time
+import pickle
 
 PICKLES_PATH = './pickels/'
 APPROX_KERNEL_PATH = './pickels/approx_kernels/'
@@ -72,8 +73,6 @@ def get_kernels_and_labels_top(top=3000, k=3, topic='earn'):
     train_labels = __load_labels(topic)
     test_labels = __load_labels(topic, _type='TEST')
     return train_kernel, train_labels, test_kernel, test_labels
-
-
 
 
 if __name__ == '__main__':
