@@ -2,6 +2,7 @@ import numpy as np
 from approximation import load_s_doc_table_top_3000
 from data import load_map_doc_id_to_index, load_all_entries, ReutersEntry
 import os
+import time
 
 PICKLES_PATH = './pickels/'
 APPROX_KERNEL_PATH = './pickels/approx_kernels/'
@@ -11,10 +12,12 @@ def __finalize(X):
     n = X.shape[1]
     G = np.zeros((n,n))
     for i in range(n):
+        t0 = time.time()
         for j in range(i, n):
-            K = X[i,:] @ X[j,:].T
+            K = X[:,i] @ X[:,j].T
             G[i,j] = K
             G[j,i] = K
+        print(f'at {i}/{n}. time:{(time.time()-t0)}s')
     return G
 
 def __construct_kernel(top, k, _type='TRAIN'):
@@ -28,7 +31,7 @@ def __construct_kernel(top, k, _type='TRAIN'):
     indices = [ mapping[x.id] for x in entries if x.lewis_split == _type ]
 
     # Load precomputed top 3000 s x all docs
-    sD_table = np.take(load_s_doc_table_top_3000(k)[:top], indices)
+    sD_table = load_s_doc_table_top_3000(k)[:top, indices]
     return __finalize(sD_table)
 
 

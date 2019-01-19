@@ -6,3 +6,7 @@ __pycache__/*
 
 #__kernel_cache__
 __kernel_cache__*
+
+pickels/s_D_top_3000_k_3_lambda_0_5.pkl
+pickels/s_D_top_3000_k_4_lambda_0_5.pkl
+pickels/s_D_top_3000_k_5_lambda_0_5.pkl
