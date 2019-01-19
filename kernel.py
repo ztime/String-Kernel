@@ -17,7 +17,7 @@ def __finalize(X):
             G[j,i] = K
     return G
 
-def __construct_kernel(top, k, type='TRAIN'):
+def __construct_kernel(top, k, _type='TRAIN'):
     print(f'Constructing approximation kernel, k={k}, top={top}.')
 
     # Load doc id to index mapping
@@ -25,7 +25,7 @@ def __construct_kernel(top, k, type='TRAIN'):
 
     # load all documents and find all included id's
     entries = load_all_entries()
-    indices = [ mapping[x.id] for x in entries if x.lewis_split == type ]
+    indices = [ mapping[x.id] for x in entries if x.lewis_split == _type ]
 
     # Load precomputed top 3000 s x all docs
     sD_table = np.take(load_s_doc_table_top_3000(k)[:top], indices)
@@ -49,16 +49,16 @@ def __load_kernels(top, k):
         with open(f'{APPROX_KERNEL_PATH}TEST_KERNEL_k_{k}_top_{top}.pkl', 'rb') as f:
             test_kernel = pickle.load(f)
     else:
-        test_kernel = __construct_kernel(top, k, type='TEST')
+        test_kernel = __construct_kernel(top, k, _type='TEST')
         f = open(f'{APPROX_KERNEL_PATH}TEST_KERNEL_k_{k}_top_{top}.pkl', 'wb')
         pickle.dump(test_kernel, f)
         f.close()
     return train_kernel, test_kernel
 
 
-def __load_labels(topic, type='TRAIN'):
+def __load_labels(topic, _type='TRAIN'):
     entries = load_all_entries()
-    labels = [ 1.0 if topic in x.topics else 0.0 for x in entries if x.lewis_split == type ]
+    labels = [ 1.0 if topic in x.topics else 0.0 for x in entries if x.lewis_split == _type ]
     return np.array(labels)
 
 def get_kernels_and_labels_top(top=3000, k=3, topic='earn'):
@@ -67,7 +67,7 @@ def get_kernels_and_labels_top(top=3000, k=3, topic='earn'):
 
     train_kernel, test_kernel = __load_kernels(top, k)
     train_labels = __load_labels(topic)
-    test_labels = __load_labels(topic, type='TEST')
+    test_labels = __load_labels(topic, _type='TEST')
     return train_kernel, train_labels, test_kernel, test_labels
 
 
